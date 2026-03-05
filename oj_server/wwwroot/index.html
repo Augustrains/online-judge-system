@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>这是我的个人oj系统</title>
+    <style>
+        /* 使得网页不受默认的影响 */
+        *{ 
+           /* 消除网页默认外边距 */
+            margin: 0px;     
+            /* 消除网页默认内间距 */
+            padding:0px;    
+        }       
+
+        html,
+        body{
+            width: 100%;
+            height: 100%;
+        }
+        
+        .container .navbar{
+            width: 100%;
+            height: 50px;
+            background-color: black;
+            /* 给父级标签设置overflow，取消后续浮动带来的影响 */
+            overflow: hidden;
+        }
+
+        .container .navbar a{
+            color: aqua;
+            font-size: large;
+            /* 设置文字高度，和导航栏一样高度 */
+            line-height: 50px;
+            text-decoration: none;
+
+            /* 设置a标签是行内块元素，允许设置宽度 */
+            display: inline-block;
+            width: 80px;
+            /* 设置文字居中 */
+            text-align: center;
+        }
+
+        .container .navbar a:hover{
+            /* 设置鼠标事件，即鼠标放到上面会发生动画 */
+            color: rgb(17, 17, 17);
+            background-color: aliceblue;
+        }
+        
+        .container .navbar .login {
+          float: right;
+          width: auto;
+          padding: 0 15px;
+        }
+
+        .container .content{
+            width: 800px;
+            height: auto;
+            /* 用来调试 */
+            margin: 0px auto;
+            /* 设置文字居中 */
+            text-align: center;
+            /* 设置上外边距 */
+            margin-top: 200px;
+        }
+
+        .container .content ._f{
+            /* 设计标签是块，可用独占一行，独立设计高度和宽度 */
+            display: block;
+            /* 设置文字的上外边距 */
+            margin-top: 20px;
+            /* 去掉下划线 */
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 导航栏 -->
+        <div class="navbar">
+            <a id="homeLink" href="#">首页</a>
+            <a id="questionsLink" href="/all_questions">题库</a>
+            <a id="talkLink" href="#" onclick="openTalkPage()">讨论</a>
+            <a class="login" id="welcomeUser">欢迎:用户名</a>
+            <a id="videoLink" href="#" onclick="openvideoPage()">题解视频</a>
+            <a id="AI" herf="#" onclick="openAI()">AI小助手</a>
+            <a id="questionsLink" href="http://8.140.17.222:9092/login.html">退出</a>
+        </div>
+        <!-- 网页内容 -->
+        <div class="content">
+            <h1 class="_f">欢迎使用oj</h1>
+            <p class="_f">这是我个人独立开发的个人平台</p>
+            <a class="_f" id="questionsBtn" href="/all_questions">点击打开题目列表</a>
+        </div>
+    </div>
+
+    <script>
+         //跳转
+         function openTalkPage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name') || '匿名用户';
+    window.open(`http://8.140.17.222:9099/talk.html?name=${encodeURIComponent(name)}`, '_blank');
+}    
+        //跳转
+        function openvideoPage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name') || '匿名用户';
+    window.open(`http://8.140.17.222:9090/index.html?name=${encodeURIComponent(name)}`, '_blank');
+}
+      //跳转
+      function openAI() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name') || '匿名用户';
+    window.open(`http://8.140.17.222:9091/tt.html`, '_blank');
+}    
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取URL中的name参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const name = urlParams.get('name');
+            
+            if (name) {
+                // 更新欢迎信息
+                document.getElementById('welcomeUser').textContent = `欢迎:${name}`;
+                
+                // 为所有链接添加name参数
+                const links = [
+                    'homeLink', 
+                    'questionsLink', 
+                    'questionsBtn'
+                ];
+                
+                links.forEach(linkId => {
+                    const link = document.getElementById(linkId);
+                    const originalHref = link.getAttribute('href');
+                    if (originalHref === '#') {
+                        link.href = `http://localhost:8080/?name=${encodeURIComponent(name)}`;
+                    } else {
+                        link.href = `${originalHref}?name=${encodeURIComponent(name)}`;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

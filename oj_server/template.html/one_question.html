@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ace测试</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/ace.js" type="text/javascript"
+        charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/extlanguage_tools.js" type="text/javascript"
+        charset="utf-8"></script>
+
+    <!-- jquery cdn，用于加速  -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.js"></script>
+
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+        }
+
+        div .ace_editor {
+
+            height: 600px;
+            width: 100%;
+        }
+
+
+        .container .navbar {
+            width: 100%;
+            height: 50px;
+            background-color: black;
+            /* 给父级标签设置overflow，取消后续浮动带来的影响 */
+            overflow: hidden;
+        }
+
+        .container .navbar a {
+            color: aqua;
+            font-size: large;
+            /* 设置文字高度，和导航栏一样高度 */
+            line-height: 50px;
+            text-decoration: none;
+
+            /* 设置a标签是行内块元素，允许设置宽度 */
+            display: inline-block;
+            width: 80px;
+            /* 设置文字居中 */
+            text-align: center;
+        }
+
+        .container .navbar a:hover {
+            /* 设置鼠标事件，即鼠标放到上面会发生动画 */
+
+            color: rgb(17, 17, 17);
+            background-color: aliceblue;
+
+        }
+
+        .container .navbar .login {
+            float: right;
+        }
+
+        .container .part1 {
+            width: 100%;
+            height: 600px;
+            overflow: hidden;
+        }
+
+        .container .part1 .left_desc {
+
+            height: 600px;
+            width: 50%;
+            float: left;
+            overflow: scroll;
+        }
+
+        .container .part1 .left_desc h4 {
+            padding-top: 10px;
+            padding-left: 10px;
+        }
+
+        .container .part1 .left_desc pre {
+            padding-top: 10px;
+            padding-left: 10px;
+            font-size: larger;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            padding-bottom: 20px; /* 添加底部内边距，可根据需求调整值 */
+
+        }
+
+        .container .part1 .right_code {
+            width: 50%;
+            float: right;
+        }
+   .container .navbar #bt {
+        display: inline-block;
+        height: 50px;
+        line-height: 50px;
+        margin: 0 20px 0 0;
+        padding: 0 10px;
+        background-color: transparent; /* 透明背景 */
+        color: #3498db; /* 蓝色文本 */
+        border: none;
+        border-radius: 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        text-decoration: none;
+        float: right;
+        font-weight: 500;
+        font-size: large;
+    }
+    
+    .container .navbar #bt:hover {
+        background-color: rgba(255, 255, 255, 0.1); /* 轻微背景变化 */
+        color: #2980b9; /* 深蓝色悬停 */
+        text-decoration: underline; /* 下划线增强交互感 */
+    }
+    
+    .container .navbar #bt:active {
+        color: #1a5276; /* 点击时更深的蓝色 */
+    }
+        .container .part2 {
+    width: 100%;
+    overflow: hidden;
+    clear: both; /* 清除浮动 */
+    margin-top: 20px; /* 添加上边距 */
+}
+        .container .part2 .result {
+            width: 300px;
+            float: left;
+        }
+
+        .container .part2 .bt {
+            margin-top: 10px;
+            margin-right: 10px;
+            float:right;
+            width: 130px;
+            height: 45px;
+            font-size: 16px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+
+        }
+
+        .container .part2 .bt:hover {
+            background-color: #2ecc71;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .container .part2 .bt:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .container .part2 .result {
+    width: 100%; /* 改为100%宽度 */
+    min-height: 60px; /* 最小高度 */
+    height: auto; /* 高度自动调整 */
+    padding: 15px;
+    margin-bottom: 20px; /* 添加底部外边距 */
+    background-color: #f8f9fa; /* 添加背景色 */
+    border-radius: 5px; /* 圆角 */
+    border: 1px solid #ddd; /* 边框 */
+    overflow: auto; /* 内容过多时显示滚动条 */
+    opacity: 10;
+    transform: translateY(20px);
+    transition: all 5s ease;
+    color: rgb(4, 4, 4);
+    transition-delay: 1.0s;
+    transition: opacity 5s ease-in-out;
+}
+        
+        .container .part2 .result .show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .container .part2 .result .fade-out {
+            opacity: 0;
+        }
+
+  
+
+        .container .part2 .result pre{
+            font-size: large;
+        }
+        
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 导航栏 -->
+        <div class="navbar">
+            <a id="homeLink" href="/">首页</a>
+            <a id="questionsLink" href="/all_questions">题库</a>
+            <a id="historyBtn" href="#"> 历史记录</a> <!-- 新增的历史记录按钮 -->
+           <button id="bt" href="javascript:void(0);" onclick="openVideoSolution()">查看题解视频</button>
+        </div>
+
+        <!-- 左边的描述和右边的代码 -->
+        <div class="part1">
+            <div class="left_desc">
+                <h4><span id="number">{{number}}</span>.{{title}}.{{star}}</h4>
+                <pre>{{desc}}</pre>
+            </div>
+            <div class="right_code">
+                <pre id="code" class="ace_editor"><textarea class="ace_textinput">{{pre_code}}</textarea></pre>
+            </div>
+        </div>
+
+
+            <!-- 交互部分 提交，得到结果，显示结果-->
+            <div class="part2">
+                <div class="result"></div>
+                <button class="bt" onclick="submit()">保存并提交</button>
+            </div>
+        </div>
+
+
+
+
+
+    <!-- ace需要的标签 -->
+    <script>
+
+        // 创建 Ace Editor 实例
+        var editor = ace.edit("code");
+        // 设置主题和语言模式
+        editor.setTheme("ace/theme/monokai");
+        editor.session.setMode("ace/mode/c_cpp");
+        // 设置字体大小
+        editor.setFontSize(16);
+        // 设置默认制表符的大小
+        editor.getSession().setTabSize(4);
+        // 设置为可编辑状态
+        editor.setReadOnly(false);
+
+        // 启用语言工具扩展
+        ace.require("ace/ext/language_tools");
+
+        // 自定义 C/C++ 关键字和代码片段
+        var c_cpp_keywords = [
+            {
+                caption: "int",
+                value: "int ",
+                meta: "keyword"
+            },
+            {
+                caption: "float",
+                value: "float ",
+                meta: "keyword"
+            },
+            {
+                caption: "double",
+                value: "double ",
+                meta: "keyword"
+            },
+            {
+                caption: "if",
+                value: "if (condition) {\n    $1\n}",
+                meta: "keyword",
+                snippet: "if (condition) {\n    ${1:statement}\n}"
+            },
+            {
+                caption: "for",
+                value: "for (int i = 0; i < n; i++) {\n    $1\n}",
+                meta: "keyword",
+                snippet: "for (int i = 0; i < ${1:n}; i++) {\n    ${2:statement}\n}"
+            }
+        ];
+
+        // 创建自定义补全提供者
+        var customCompleter = {
+            getCompletions: function (editor, session, pos, prefix, callback) {
+                if (prefix.length === 0) {
+                    callback(null, []);
+                    return;
+                }
+                callback(null, c_cpp_keywords.filter(function (keyword) {
+                    return keyword.caption.indexOf(prefix) === 0;
+                }));
+            }
+        };
+
+        // 设置编辑器的选项，启用自动补全功能
+        editor.setOptions({
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true
+        });
+
+        // 添加自定义补全提供者
+        editor.completers.push(customCompleter);
+     </script>
+     
+     <script>
+        function submit() {
+            // 获取当前时间
+            var now = new Date();
+            var time = now.getFullYear() + '-' + 
+                (now.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+                now.getDate().toString().padStart(2, '0') + ' ' + 
+                now.getHours().toString().padStart(2, '0') + ':' + 
+                now.getMinutes().toString().padStart(2, '0') + ':' + 
+                now.getSeconds().toString().padStart(2, '0');
+        
+            // 获取代码内容
+            var code = editor.getSession().getValue();
+    
+            // 获取题号
+            var number = $(".container .part1 .left_desc h4 #number").text();
+            
+            // 从URL获取name参数
+            var urlParams = new URLSearchParams(window.location.search);
+            var name = urlParams.get('name');
+    
+            // 请求路径
+            var judge_url = "/judge/" + number;
+            
+            $(".result").addClass("fade-out");
+    
+            // 构建JSON数据，包含name参数
+            var requestData = {
+                'code': code,
+                'input': '',
+                'time': time
+            };
+            
+            // 如果存在name参数，则添加到请求数据中
+            if (name) {
+                requestData.name = name;
+            }
+    
+            // 发送AJAX请求
+            $.ajax({
+                method: 'Post',
+                url: judge_url,
+                dataType: 'json',
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify(requestData),
+                success: function(data) {
+                    show_result(data);
+                }
+            });
+            
+            // 按钮点击动画
+            $(".bt").addClass("clicked");
+            setTimeout(function() {
+                $(".bt").removeClass("clicked");
+            }, 300);
+        }
+    
+        function show_result(data) {
+            var _result = $(".container .part2 .result");
+            var status_ = data.status;
+            var reason_ = data.reason;
+            
+            _result.empty();
+            $(".result").removeClass("fade-out");
+    
+            if(status_ == 0) {
+                // 编译和运行成功
+                var stdout_ = data.stdout;
+                var stderr_ = data.stderr;
+                
+                var reason_label = $("<p>", {text: reason_});
+                var stdout_label = $("<pre>", {text: stdout_});
+                var stderr_label = $("<pre>", {text: stderr_});
+                
+                reason_label.appendTo(_result);
+                stdout_label.appendTo(_result);
+                stderr_label.appendTo(_result);
+            } else {
+                // 编译和运行出错
+                var reason_label = $("<p>", {text: reason_});
+                reason_label.appendTo(_result);
+            }
+            
+            _result.addClass('show');
+        }
+    </script>
+   
+
+  
+<script>
+    // 等待DOM完全加载
+    $(document).ready(function() {
+        // 获取当前页面URL中的题目ID
+        function getCurrentQuestionId() {
+            // 假设URL格式为 /question/数字
+            var path = window.location.pathname;
+            var parts = path.split('/');
+            if (parts.length >= 3 && parts[1] === 'question') {
+                return parts[2];
+            }
+            return null;
+        }
+        
+    });
+</script>
+
+<script>
+      // 从URL获取name参数并更新所有链接
+      document.addEventListener('DOMContentLoaded', function() {
+            // 获取URL中的name参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const name = urlParams.get('name');
+            const pathParts = window.location.pathname.split('/');
+            const id = pathParts[2]; // 得到 "1"
+            const historyBtn = document.getElementById('historyBtn');
+        if (historyBtn) {
+            historyBtn.href = `http://8.140.17.222:9091/allhistory.html?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+        }
+            if (name) {
+                // 为导航栏链接添加name参数
+                const navLinks = ['homeLink', 'questionsLink', 'talkLink', 'videoLink'];
+                navLinks.forEach(linkId => {
+                    const link = document.getElementById(linkId);
+                    if(link)
+                {
+                    const originalHref = link.getAttribute('href');
+                    link.href = `${originalHref}?name=${encodeURIComponent(name)}`;
+                }
+                    
+                    
+                });
+                
+                // 为题目列表中的每个链接添加name参数
+                const questionLinks = document.querySelectorAll('.question-table .item a');
+                questionLinks.forEach(link => {
+                    const originalHref = link.getAttribute('href');
+                    link.href = `${originalHref}?name=${encodeURIComponent(name)}`;
+                });
+            }
+        });
+</script>
+
+<script>
+function openVideoSolution() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name');
+    const h4Element = document.querySelector('.part1 .left_desc h4');
+    
+    if (!h4Element) {
+        alert('未找到题目标题');
+        return;
+    }
+    
+    const titleText = h4Element.textContent.trim();
+    const [, title] = titleText.split('.').map(s => s.trim()); // 假设标题在第二个位置
+    
+    if (!title) {
+        alert('无法解析题目标题');
+        return;
+    }
+   // alert("尝试发送请求");
+      // 发送AJAX请求
+            $.ajax({
+                method: 'Post',
+                url: 'http://8.140.17.222:8080/getid',
+                dataType: 'json',
+                contentType: 'application/json;charset=utf-8',
+                data: JSON.stringify({ title: title }), // 手动序列化为JSON字符串
+                success: function(data) {
+                    if (data.code === 200 && data.id)
+                {
+                        const videoUrl = `http://8.140.17.222:9090/video.html?id=${data.id}&name=${encodeURIComponent(name)}`;
+                        window.open(videoUrl, '_blank');
+                }
+                else
+                { 
+                    alert("该题没有题解视频");
+                }
+          
+                }
+
+            });
+}
+</script>
+
+</body>
+
+
+
+
+
+</html>

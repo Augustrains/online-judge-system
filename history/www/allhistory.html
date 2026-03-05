@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题目提交历史</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+       .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative; /* 为返回按钮定位 */
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+       .query-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+       .status {
+            color: #007bff;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+       .status:hover {
+            color: #0056b3;
+        }
+
+       .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+       .error {
+            color: #dc3545;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* 新增返回按钮样式 */
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 8px 15px;
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .back-button:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 新增返回按钮 -->
+        <a id="backButton" class="back-button">返回题目</a>
+        
+        <h1>题目提交历史</h1>
+        <div id="queryInfo" class="query-info">
+            <!-- 查询信息将在这里显示 -->
+        </div>
+        <div id="loading" class="loading">加载中...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        <table id="historyTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>提交 ID</th>
+                    <th>提交时间</th>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- 数据将通过JavaScript动态加载 -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // 获取URL中的id参数
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 页面加载时获取数据
+        document.addEventListener('DOMContentLoaded', function () {
+            const id = getQueryParam('id');
+            const name = getQueryParam('name');
+            if (!id || !/^\d+$/.test(id)) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = '无效的题目ID';
+                return;
+            }
+
+            // 显示查询信息
+            document.getElementById('queryInfo').innerHTML = `
+                <strong>题目ID: </strong>${id}
+            `;
+
+            // 设置返回按钮的链接
+            document.getElementById('backButton').href = `http://8.140.17.222:8080/question/${id}?name=${encodeURIComponent(name)}`;
+
+            fetchHistoryData(id,name);
+        });
+
+        // 获取历史数据
+        function fetchHistoryData(id,name) {
+            fetch(`/select/${id}/${name}`)
+               .then(response => {
+                    if (!response.ok) {
+                        throw new Error('未查找到该题记录');
+                    }
+                    return response.json();
+                })
+               .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+                    if (Array.isArray(data) && data.length === 0) {
+                        document.getElementById('error').style.display = 'block';
+                        document.getElementById('error').textContent = '没有找到提交记录';
+                    } else {
+                        renderHistoryTable(data);
+                    }
+                })
+               .catch(error => {
+                    console.error('发生错误');
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('error').textContent = '加载失败' ;
+                });
+        }
+
+        // 渲染历史表格
+        function renderHistoryTable(data) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            if (!Array.isArray(data) || data.length === 0) {
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = '没有找到提交记录';
+                return;
+            }
+
+            document.getElementById('historyTable').style.display = 'table';
+
+            data.forEach(item => {
+                const row = document.createElement('tr');
+
+                const idCell = document.createElement('td');
+                idCell.textContent = item.id;
+
+                const timeCell = document.createElement('td');
+                timeCell.textContent = item.time;
+
+                const statusCell = document.createElement('td');
+                const statusLink = document.createElement('span');
+                statusLink.textContent = item.result;
+                statusLink.className = 'status';
+                statusLink.onclick = () => {
+                    window.location.href = `/code.html?idd=${item.idd}&name=${item.name}`;
+                };
+
+                statusCell.appendChild(statusLink);
+                row.appendChild(idCell);
+                row.appendChild(timeCell);
+                row.appendChild(statusCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+
+</html> 

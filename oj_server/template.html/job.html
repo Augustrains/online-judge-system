@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>求职页面</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            animation: slideDown 0.8s ease-in-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+
+        .back-button:hover {
+            background-color: #555;
+            transform: scale(1.1);
+        }
+
+        section {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            animation: fadeInSection 1s ease-in-out;
+        }
+
+        @keyframes fadeInSection {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        strong {
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 返回按钮 -->
+    <button class="back-button" onclick="goBack()">返回上级目录</button>
+
+    <!-- 头部 -->
+    <header>
+        <h1>求职页面</h1>
+    </header>
+
+    <!-- 个人信息 -->
+    <section>
+        <h2>个人信息</h2>
+        <ul>
+            <li><strong>姓名：</strong>张三</li>
+            <li><strong>联系方式：</strong>13800138000</li>
+            <li><strong>电子邮箱：</strong>zhangsan@example.com</li>
+        </ul>
+    </section>
+
+    <!-- 求职意向 -->
+    <section>
+        <h2>求职意向</h2>
+        <ul>
+            <li><strong>期望职位：</strong>前端开发工程师</li>
+            <li><strong>工作地点：</strong>北京市</li>
+            <li><strong>薪资要求：</strong>10k - 15k</li>
+        </ul>
+    </section>
+
+    <!-- 工作经历 -->
+    <section>
+        <h2>工作经历</h2>
+        <ul>
+            <li>
+                <strong>公司名称：</strong>ABC科技有限公司
+                <br>
+                <strong>职位：</strong>前端开发实习生
+                <br>
+                <strong>工作时间：</strong>2023.06 - 2023.09
+                <br>
+                <strong>主要职责：</strong>协助团队进行项目开发，参与页面布局设计，优化页面性能。
+            </li>
+        </ul>
+    </section>
+
+    <!-- 教育背景 -->
+    <section>
+        <h2>教育背景</h2>
+        <ul>
+            <li>
+                <strong>学校名称：</strong>XX大学
+                <br>
+                <strong>专业：</strong>计算机科学与技术
+                <br>
+                <strong>入学时间：</strong>2020.09
+                <br>
+                <strong>毕业时间：</strong>2024.06
+            </li>
+        </ul>
+    </section>
+
+    <!-- 技能与证书 -->
+    <section>
+        <h2>技能与证书</h2>
+        <ul>
+            <li><strong>技能：</strong>熟练掌握 HTML、CSS、JavaScript；了解 Vue.js 框架。</li>
+            <li><strong>证书：</strong>大学英语四级证书</li>
+        </ul>
+    </section>
+
+    <!-- 自我评价 -->
+    <section>
+        <h2>自我评价</h2>
+        <p>本人具备较强的学习能力和问题解决能力，对前端开发有浓厚的兴趣。在实习期间积累了一定的项目经验，能够快速适应新的工作环境和技术。工作认真负责，注重团队协作，期待能在贵公司继续提升自己的专业技能。</p>
+    </section>
+
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+    </script>
+</body>
+
+</html>

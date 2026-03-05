@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户列表 - 密码隐藏示例</title>
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-list {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .user-list th,
+        .user-list td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .user-list th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        /* 用户名可点击样式 */
+        .clickable {
+            color: #1a73e8;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* 密码容器样式 */
+        .password-container {
+            position: relative;
+            min-width: 120px; /* 设置最小宽度 */
+            max-width: 200px; /* 设置最大宽度 */
+        }
+
+        .password-wrapper {
+            display: flex;
+            align-items: center;
+        }
+
+        .password-scroll {
+            overflow-x: auto; /* 添加横向滚动条 */
+            white-space: nowrap; /* 防止换行 */
+            padding-bottom: 8px; /* 为滚动条留出空间 */
+            margin-right: 8px; /* 与图标保持间距 */
+        }
+
+        /* 自定义滚动条样式 */
+        .password-scroll::-webkit-scrollbar {
+            height: 5px; /* 减小滚动条高度 */
+        }
+        
+        .password-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1; /* 轨道背景 */
+            border-radius: 4px;
+        }
+        
+        .password-scroll::-webkit-scrollbar-thumb {
+            background: #c1c1c1; /* 滑块颜色 */
+            border-radius: 4px;
+        }
+        
+        .password-scroll::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1; /* 滑块悬停颜色 */
+        }
+
+        .password-value {
+            display: inline-block;
+            min-width: 80px; /* 密码区域最小宽度 */
+            vertical-align: middle; /* 垂直居中对齐 */
+        }
+
+        .password-toggle {
+            display: inline-block;
+            cursor: pointer;
+            color: #1a73e8;
+            vertical-align: middle; /* 垂直居中对齐 */
+            flex-shrink: 0; /* 防止图标被压缩 */
+            position: relative; /* 确保z-index生效 */
+            z-index: 1; /* 确保图标显示在滚动条上方 */
+        }
+
+        .password-toggle::after {
+            content: '\f06e'; /* Font Awesome eye icon */
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+        }
+
+        .password-toggle.show::after {
+            content: '\f070'; /* Font Awesome eye-slash icon */
+        }
+
+        /* 密码显示时的样式 */
+        .password-container.show-password .password-value {
+            color: #333; /* 显示密码时的文本颜色 */
+        }
+
+        .error-message {
+            color: red;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 4px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* 历史记录列表样式 */
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto; /* 添加纵向滚动条 */
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .history-item.selected {
+            background-color: #e8f0fe;
+        }
+
+        .history-time {
+            font-weight: bold;
+        }
+
+        .history-result {
+            margin-left: 10px;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .failure {
+            color: red;
+        }
+
+        /* 代码详情样式 */
+        .code-details {
+            margin-top: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto; /* 添加纵向滚动条 */
+            background-color: #f8f9fa;
+        }
+
+        .code-header {
+            padding: 8px 10px;
+            background-color: #e8f0fe;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: bold;
+        }
+
+        .code-content {
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* 加载动画 */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3498db;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        } 
+
+        /* 添加按钮样式 */
+        .btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+        }
+        
+        .btn-primary {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+        }
+
+        /* 删除弹窗样式 */
+        .delete-modal .modal-content {
+            max-width: 400px;
+        }
+
+        .user-select-item {
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .user-select-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .user-select-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        /* 新增用户表单样式 */
+        .user-form .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .user-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .user-form input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .user-form .modal-footer {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        /* 题号列表样式 */
+        .question-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .question-item {
+            padding: 8px 12px;
+            background-color: #f0f2f5;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .question-item:hover {
+            background-color: #e0e0e0;
+        }
+
+        .question-item.selected {
+            background-color: #1a73e8;
+            color: white;
+        }
+
+        .back-button {
+            margin-bottom: 10px;
+            cursor: pointer;
+            color: #1a73e8;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .back-button::before {
+            content: '\f060'; /* Font Awesome arrow-left icon */
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            margin-right: 5px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 新增按钮样式 */
+.btn-secondary {
+    background-color: #f1da0d; /* 深灰色 */
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-left: 8px; /* 与其他按钮保持间距 */
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268; /* 悬停时更深的灰色 */
+}
+
+/* 响应式调整（可选）：在小屏幕上按钮换行显示 */
+@media (max-width: 600px) {
+    .container .user-list + div {
+        flex-direction: column; /* 按钮在小屏幕纵向排列 */
+        align-items: flex-start; /* 左对齐 */
+        gap: 8px; /* 按钮间距 */
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>用户列表</h2>
+        
+        <!-- 操作按钮 -->
+    
+        
+         <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <button id="addUserButton" class="btn btn-primary">新增用户</button>
+            <button id="deleteButton" class="btn btn-danger">删除用户</button>
+            
+            <!-- 新增显示题目信息按钮 -->
+             <button href="#" id="showQuestionsButton" class="btn btn-secondary">
+                显示所有题目信息
+            </button>
+        </div>
+
+        <!-- 加载状态 -->
+        <div id="loading" class="loading">
+            <i class="fa fa-spinner fa-spin"></i> 加载中...
+        </div>
+        
+        <table class="user-list" id="userTable">
+            <thead>
+                <tr>
+                    <th>用户名</th>
+                    <th>密码</th>
+                </tr>
+            </thead>
+            <tbody id="userBody">
+                <!-- 动态填充用户数据 -->
+            </tbody>
+        </table>
+        
+        <!-- 错误提示 -->
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+    </div>
+
+    <!-- 新增用户弹窗 -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">创建新用户</div>
+                <span class="close add-close">&times;</span>
+            </div>
+            <form id="addUserForm" class="user-form">
+                <div class="form-group">
+                    <label for="newUsername">用户名</label>
+                    <input type="text" id="newUsername" name="username" 
+                           placeholder="请输入用户名" 
+                           required minlength="3" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">密码</label>
+                    <input type="password" id="newPassword" name="password" 
+                           placeholder="请输入密码" 
+                           required minlength="6" maxlength="20">
+                </div>
+                <div class="form-group" id="usernameError" style="color: red; display: none;">
+                    用户名已存在！请更换其他用户名
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="addUserSubmit" class="btn btn-primary">创建</button>
+                    <button class="btn btn-secondary add-close">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 删除用户弹窗 -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">删除用户</div>
+                <span class="close delete-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>请选择要删除的用户：</p>
+                <div id="userSelectList" style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; padding: 8px;">
+                    <!-- 动态生成用户选择项 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="deleteConfirm" class="btn btn-danger">确认删除</button>
+                <button class="btn btn-secondary delete-close">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户历史记录弹窗 -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">用户历史记录 - <span id="modalUsername">用户名</span></div>
+                <span class="close">&times;</span>
+            </div>
+            
+            <div id="historyLoading" class="loading">
+                <div class="loader"></div>加载历史记录中...
+            </div>
+            
+            <div id="questionList" class="question-list" style="display: none;"></div>
+            
+            <div id="backButton" class="back-button" style="display: none;">返回题目列表</div>
+            
+            <div id="historyList" class="history-list" style="display: none;"></div>
+            
+            <div id="codeDetails" class="code-details" style="display: none;">
+                <div class="code-header">代码详情</div>
+                <div id="codeContent" class="code-content"></div>
+            </div>
+            
+            <div id="historyError" class="error-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- 引入Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script>
+       
+        document.getElementById('showQuestionsButton').addEventListener('click', () => {
+                // 获取当前用户名（从用户列表中获取第一个用户，或使用默认值）
+                const currentUsername = document.querySelector('.clickable')?.textContent || 'default_user';
+                
+                // 跳转到指定页面（注意：需要确保questions.html存在）
+                window.location.href = `questions.html?name=${encodeURIComponent(currentUsername)}`;
+            });
+
+        
+        // 获取用户列表
+        const fetchUsers = async () => {
+            try {  
+                console.log('开始获取用户数据...');
+                const response = await fetch('/getusers', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                console.log('收到响应');
+
+                // 检查HTTP状态码
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`获取用户列表失败`);
+                }
+
+                // 解析JSON响应
+                const users = await response.json();
+                console.log('解析后的用户数据:', users);
+                return users;
+            } catch (error) {
+                console.error('获取用户数据失败');
+                // 显示错误信息
+                const errorElement = document.getElementById('errorMessage');
+                errorElement.textContent = `发生错误`;
+                errorElement.style.display = 'block';
+                throw error;
+            }
+        };
+
+       // 获取用户回答过的题号列表
+const fetchUserQuestions = async (username) => {
+    try {
+        console.log(`开始获取用户 ${username} 回答过的题号列表...`);
+        const response = await fetch(`/questions?username=${encodeURIComponent(username)}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`获取题号列表失败`);
+        }
+
+        const questions = await response.json();
+        console.log(`用户 ${username} 回答过的题号列表:`, questions);
+        
+        // 确保返回的是题号数组
+        return questions.map(q => q.id || q.questionId || q);
+    } catch (error) {
+        console.error('获取题号列表失败');
+        const errorElement = document.getElementById('historyError');
+        errorElement.textContent = `当前无历史记录`;
+        errorElement.style.display = 'block';
+        throw error;
+    }
+};
+
+// 获取特定题目的所有提交记录
+const fetchQuestionSubmissions = async (username, questionId) => {
+    try {
+        console.log(`开始获取用户 ${username} 题目 ${questionId} 的提交记录...`);
+        const response = await fetch(`/submissions?username=${encodeURIComponent(username)}&questionId=${questionId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`获取提交记录失败`);
+        }
+
+        const submissions = await response.json();
+        console.log(`用户 ${username} 题目 ${questionId} 的提交记录:`, submissions);
+        
+        // 确保提交记录有正确的结构
+        return submissions.map(sub => ({
+            id: sub.id || sub._id || '',
+            time: sub.time || sub.submitTime || '未知时间',
+            result: sub.result || 'unknown',
+            code: sub.code || ''
+        }));
+    } catch (error) {
+        console.error('获取提交记录失败');
+        const errorElement = document.getElementById('historyError');
+        errorElement.textContent = `发生错误`;
+        errorElement.style.display = 'block';
+        throw error;
+    }
+};
+
+        // 渲染用户列表
+        const renderUsers = (users) => {
+            console.log('开始渲染用户数据:', users);
+            const userBody = document.getElementById('userBody');
+            userBody.innerHTML = ''; // 清空原有内容
+
+            // 隐藏加载状态
+            document.getElementById('loading').style.display = 'none';
+            
+            if (!users || users.length === 0) {
+                console.log('没有用户数据或数据为空');
+                // 空列表处理
+                const emptyRow = document.createElement('tr');
+                const emptyCell = document.createElement('td');
+                emptyCell.colSpan = 2;
+                emptyCell.className = 'text-center';
+                emptyCell.textContent = '没有找到用户数据';
+                emptyRow.appendChild(emptyCell);
+                userBody.appendChild(emptyRow);
+                return;
+            }
+
+            // 渲染用户数据
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                
+                // 用户名（可点击）
+                const nameTd = document.createElement('td');
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'clickable';
+                nameSpan.textContent = user.name || '未命名用户';
+                nameSpan.addEventListener('click', () => {
+                    openUserHistory(user.name || '未命名用户');
+                });
+                nameTd.appendChild(nameSpan);
+                
+                // 密码（带切换功能）
+                const passwordTd = document.createElement('td');
+                passwordTd.className = 'password-container';
+                
+                // 添加滚动容器
+                const passwordWrapper = document.createElement('div');
+                passwordWrapper.className = 'password-wrapper';
+                
+                const passwordScroll = document.createElement('div');
+                passwordScroll.className = 'password-scroll';
+                
+                const passwordSpan = document.createElement('span');
+                passwordSpan.className = 'password-value';
+                passwordSpan.dataset.realPassword = user.password || ''; // 存储真实密码
+                passwordSpan.textContent = '******'; // 默认隐藏
+                
+                const toggleIcon = document.createElement('span');
+                toggleIcon.className = 'password-toggle';
+                toggleIcon.addEventListener('click', () => {
+                    togglePasswordVisibility(passwordTd, toggleIcon, passwordSpan);
+                });
+                
+                passwordScroll.appendChild(passwordSpan);
+                passwordWrapper.appendChild(passwordScroll);
+                passwordWrapper.appendChild(toggleIcon);
+                passwordTd.appendChild(passwordWrapper);
+                
+                tr.appendChild(nameTd);
+                tr.appendChild(passwordTd);
+                userBody.appendChild(tr);
+            });
+            console.log('用户数据渲染完成');
+        };
+
+        // 打开用户历史记录弹窗
+        const openUserHistory = async (username) => {
+            const modal = document.getElementById('historyModal');
+            const modalUsername = document.getElementById('modalUsername');
+            const historyLoading = document.getElementById('historyLoading');
+            const questionList = document.getElementById('questionList');
+            const historyList = document.getElementById('historyList');
+            const codeDetails = document.getElementById('codeDetails');
+            const historyError = document.getElementById('historyError');
+            const backButton = document.getElementById('backButton');
+            
+            modalUsername.textContent = username;
+            
+            // 重置弹窗状态
+            questionList.style.display = 'none';
+            historyList.style.display = 'none';
+            codeDetails.style.display = 'none';
+            historyError.style.display = 'none';
+            backButton.style.display = 'none';
+            historyLoading.style.display = 'block';
+            
+            // 显示弹窗
+            modal.style.display = 'block';
+            
+            try {
+                // 获取用户回答过的题号列表
+                const questions = await fetchUserQuestions(username);
+                
+                // 隐藏加载状态，显示题号列表
+                historyLoading.style.display = 'none';
+                questionList.style.display = 'flex';
+                
+                // 清空题号列表
+                questionList.innerHTML = '';
+                
+                if (!questions || questions.length === 0) {
+                    const emptyItem = document.createElement('div');
+                    emptyItem.className = 'history-item';
+                    emptyItem.textContent = '没有历史记录';
+                    questionList.appendChild(emptyItem);
+                    return;
+                }
+                
+                // 渲染题号列表
+                questions.forEach(questionId => {
+                    const questionItem = document.createElement('div');
+                    questionItem.className = 'question-item';
+                    questionItem.textContent = `题目 ${questionId}`;
+                    questionItem.dataset.questionId = questionId;
+                    
+                    questionItem.addEventListener('click', () => {
+                        showQuestionSubmissions(username, questionId);
+                    });
+                    
+                    questionList.appendChild(questionItem);
+                });
+            } catch (error) {
+                // 隐藏加载状态，显示错误
+                historyLoading.style.display = 'none';
+                historyError.style.display = 'block';
+            }
+        };
+
+        // 显示特定题目的提交记录
+        const showQuestionSubmissions = async (username, questionId) => {
+            const historyLoading = document.getElementById('historyLoading');
+            const questionList = document.getElementById('questionList');
+            const historyList = document.getElementById('historyList');
+            const codeDetails = document.getElementById('codeDetails');
+            const historyError = document.getElementById('historyError');
+            const backButton = document.getElementById('backButton');
+            
+            // 更新模态框标题
+            const modalTitle = document.querySelector('.modal-title');
+            modalTitle.innerHTML = `用户历史记录 - <span id="modalUsername">${username}</span> - 题目 ${questionId}`;
+            
+            // 重置状态
+            questionList.style.display = 'none';
+            historyList.style.display = 'none';
+            codeDetails.style.display = 'none';
+            historyError.style.display = 'none';
+            backButton.style.display = 'block';
+            historyLoading.style.display = 'block';
+            
+            try {
+                // 获取特定题目的提交记录
+                const submissions = await fetchQuestionSubmissions(username, questionId);
+                
+                // 隐藏加载状态，显示提交记录
+                historyLoading.style.display = 'none';
+                historyList.style.display = 'block';
+                
+                // 清空提交记录列表
+                historyList.innerHTML = '';
+                
+                if (!submissions || submissions.length === 0) {
+                    const emptyItem = document.createElement('div');
+                    emptyItem.className = 'history-item';
+                    emptyItem.textContent = '没有该题目的提交记录';
+                    historyList.appendChild(emptyItem);
+                    return;
+                }
+                
+                // 渲染提交记录
+                submissions.forEach(submission => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.dataset.id = submission.id;
+                    historyItem.dataset.code = submission.code || '';
+                    
+                    const timeSpan = document.createElement('span');
+                    timeSpan.className = 'history-time';
+                    timeSpan.textContent = submission.time || '未知时间';
+                    
+                    const resultSpan = document.createElement('span');
+                    resultSpan.className = `history-result ${submission.result === 'success' ? 'success' : 'failure'}`;
+                    resultSpan.textContent = submission.result === 'success' ? '成功' : '失败';
+                    
+                    historyItem.appendChild(timeSpan);
+                    historyItem.appendChild(resultSpan);
+                    
+                    // 鼠标悬停显示代码详情
+                    historyItem.addEventListener('mouseenter', () => {
+                        // 移除其他项的选中状态
+                        document.querySelectorAll('.history-item.selected').forEach(el => {
+                            el.classList.remove('selected');
+                        });
+                        
+                        // 添加当前项的选中状态
+                        historyItem.classList.add('selected');
+                        
+                        // 显示代码详情
+                        codeDetails.style.display = 'block';
+                        
+                        // 更新代码内容
+                        const codeContent = document.getElementById('codeContent');
+                        codeContent.textContent = historyItem.dataset.code || '无代码内容';
+                    });
+                    
+                    historyList.appendChild(historyItem);
+                });
+            } catch (error) {
+                // 隐藏加载状态，显示错误
+                historyLoading.style.display = 'none';
+                historyError.style.display = 'block';
+            }
+        };
+
+        // 返回题目列表
+        const backToQuestions = () => {
+            const username = document.getElementById('modalUsername').textContent;
+            openUserHistory(username);
+        };
+
+        // 关闭弹窗
+        const closeModal = () => {
+            document.getElementById('historyModal').style.display = 'none';
+        };
+
+        // 切换密码可见性
+        const togglePasswordVisibility = (tdElement, icon, span) => {
+            const isShow = icon.classList.toggle('show');
+            tdElement.classList.toggle('show-password', isShow);
+            
+            if (isShow) {
+                span.textContent = span.dataset.realPassword || '';
+            } else {
+                span.textContent = '******';
+            }
+        };
+
+        // 删除用户相关变量
+        let selectedUsers = [];
+
+        // 初始化删除功能
+        const initDeleteFunction = () => {
+            // 绑定删除按钮事件
+            document.getElementById('deleteButton').addEventListener('click', showDeleteModal);
+            
+            // 绑定确认删除事件
+            document.getElementById('deleteConfirm').addEventListener('click', handleDeleteConfirm);
+            
+            // 绑定弹窗关闭事件
+            document.querySelectorAll('.delete-close').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('deleteModal').style.display = 'none';
+                    selectedUsers = []; // 清空选中状态
+                });
+            });
+        };
+
+        // 显示删除用户弹窗
+        const showDeleteModal = () => {
+            const modal = document.getElementById('deleteModal');
+            const userList = document.getElementById('userSelectList');
+            userList.innerHTML = ''; // 清空原有内容
+            
+            // 从用户列表获取所有用户名
+            const users = Array.from(document.querySelectorAll('.clickable')).map(span => span.textContent);
+            
+            // 生成用户选择项
+            users.forEach(name => {
+                const item = document.createElement('div');
+                item.className = 'user-select-item';
+                item.innerHTML = `
+                    <input type="checkbox" class="user-checkbox" value="${name}">
+                    <span>${name}</span>
+                `;
+                item.querySelector('input').addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedUsers.push(e.target.value);
+                    } else {
+                        selectedUsers = selectedUsers.filter(n => n !== e.target.value);
+                    }
+                });
+                userList.appendChild(item);
+            });
+            
+            modal.style.display = 'block';
+        };
+
+        // 处理确认删除
+        const handleDeleteConfirm = async () => {
+            if (selectedUsers.length === 0) {
+                alert('请选择至少一个用户');
+                return;
+            }
+
+            // 获取当前用户名（从 URL 的 name 参数获取，防止删除自己）
+            const currentUsername = new URLSearchParams(window.location.search).get('name') || '';
+            if (selectedUsers.includes(currentUsername)) {
+                alert('不能删除当前登录用户！');
+                return;
+            }
+
+            try {
+                // 显示加载状态
+                document.getElementById('loading').style.display = 'block';
+                
+                // 发送删除请求
+                const response = await fetch('/delete-users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ usernames: selectedUsers }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`删除失败`);
+                }
+                
+                alert('用户删除成功');
+                document.getElementById('deleteModal').style.display = 'none';
+                selectedUsers = [];
+                
+                // 重新加载用户列表
+                const users = await fetchUsers();
+                renderUsers(users);
+            } catch (error) {
+                alert(`删除失败`);
+                console.error(error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        };
+
+        // 新增用户相关变量
+        const addUserModal = document.getElementById('addUserModal');
+
+        // 初始化新增用户功能
+        const initAddUserFunction = () => {
+            // 绑定新增用户按钮事件
+            document.getElementById('addUserButton').addEventListener('click', () => {
+                addUserModal.style.display = 'block';
+                // 清空表单和错误提示
+                document.getElementById('addUserForm').reset();
+                document.getElementById('usernameError').style.display = 'none';
+            });
+
+            // 绑定表单提交事件
+            document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('newUsername').value.trim();
+                const password = document.getElementById('newPassword').value.trim();
+
+                try {
+                    // 显示加载状态
+                    document.getElementById('loading').style.display = 'block';
+
+                    // 发送创建用户请求
+                    const response = await fetch('/create-user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, password }),
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 409) { // 用户名冲突
+                            document.getElementById('usernameError').style.display = 'block';
+                        } else {
+                            throw new Error(`用户名已存在`);
+                        }
+                        return;
+                    }
+
+                    alert('用户创建成功！');
+                    addUserModal.style.display = 'none';
+                    // 刷新用户列表
+                    const users = await fetchUsers();
+                    renderUsers(users);
+
+                } catch (error) {
+                    alert(`创建失败`);
+                    console.error(error);
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
+            });
+
+            // 绑定弹窗关闭事件
+            document.querySelectorAll('.add-close').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    addUserModal.style.display = 'none';
+                    document.getElementById('addUserForm').reset();
+                    document.getElementById('usernameError').style.display = 'none';
+                });
+            });
+        };
+
+        // 初始化
+        (async () => {
+            try {
+                console.log('初始化开始...');
+                // 显示加载状态
+                document.getElementById('loading').style.display = 'block';
+                
+                // 获取并渲染用户数据
+                const users = await fetchUsers();
+                renderUsers(users);
+                
+                // 添加弹窗关闭事件
+                document.querySelector('.close').addEventListener('click', closeModal);
+                
+                // 点击弹窗外部关闭
+                document.getElementById('historyModal').addEventListener('click', (e) => {
+                    if (e.target === document.getElementById('historyModal')) {
+                        closeModal();
+                    }
+                });
+                
+                // ESC键关闭弹窗
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        closeModal();
+                        document.getElementById('addUserModal').style.display = 'none';
+                        document.getElementById('deleteModal').style.display = 'none';
+                    }
+                });
+                
+                // 返回按钮事件
+                document.getElementById('backButton').addEventListener('click', backToQuestions);
+
+                // 初始化删除和新增功能
+                initDeleteFunction();
+                initAddUserFunction();
+            } catch (error) {
+                console.error('初始化失败');
+                // 错误已在fetchUsers中处理
+                document.getElementById('loading').style.display = 'none';
+            }
+        })();
+    </script>
+</body>
+</html>
+    

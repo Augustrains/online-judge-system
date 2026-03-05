@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 统一 CSP 配置 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: https:;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对话页面</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            padding: 15px 0;
+            color: #333;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #e6e6e6;
+        }
+        
+        .chat-container {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #e5e5e5;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message {
+            max-width: 70%;
+            margin-bottom: 15px;
+            position: relative;
+            padding: 10px 15px;
+            border-radius: 5px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+        
+        .user-message {
+            align-self: flex-end;
+            background-color: #95ec69;
+            color: #000;
+            border-top-right-radius: 0;
+        }
+        
+        .bot-message {
+            align-self: flex-start;
+            background-color: #fff;
+            color: #333;
+            border-top-left-radius: 0;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .typing-indicator {
+            align-self: flex-start;
+            background-color: #fff;
+            color: #999;
+            border-top-left-radius: 0;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+            font-style: italic;
+        }
+        
+        .timestamp {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+            text-align: right;
+        }
+        
+        .input-container {
+            display: flex;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-top: 1px solid #e6e6e6;
+        }
+        
+        #user-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 16px;
+        }
+        
+        #user-input:focus {
+            border-color: #95ec69;
+        }
+        
+        #send-button {
+            margin-left: 10px;
+            padding: 0 20px;
+            background-color: #95ec69;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.2s;
+        }
+        
+        #send-button:hover {
+            background-color: #7ed956;
+        }
+        
+        /* 小屏幕适配 */
+        @media (max-width: 600px) {
+            body {
+                max-width: 100%;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>对话系统</h1>
+    
+    <div class="chat-container" id="chat-box">
+        <!-- 对话内容将在这里显示 -->
+        <div class="message bot-message">
+            您好！我是您的智能助手，有什么可以帮您的吗？
+            <div class="timestamp">系统消息</div>
+        </div>
+    </div>
+    
+    <div class="input-container">
+        <input type="text" id="user-input" placeholder="请输入您的问题..." autofocus>
+        <button id="send-button">发送</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatBox = document.getElementById('chat-box');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (message === '') return;
+                
+                displayMessage(message, 'user');
+                userInput.value = '';
+                
+                // 显示"AI正在思考"提示
+                const typingIndicator = createTypingIndicator();
+                chatBox.appendChild(typingIndicator);
+                chatBox.scrollTop = chatBox.scrollHeight;
+                
+                // 禁用发送按钮防止重复提交
+                sendButton.disabled = true;
+                
+                fetch('/getanswer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content: message })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('网络错误');
+                    return response.json();
+                })
+                .then(data => {
+                    // 移除"AI正在思考"提示
+                    chatBox.removeChild(typingIndicator);
+                    
+                    if (data && data.content) {
+                        displayMessage(data.content, 'bot');
+                    } else {
+                        throw new Error('无效响应');
+                    }
+                })
+                .catch(error => {
+                    // 移除"AI正在思考"提示
+                    chatBox.removeChild(typingIndicator);
+                    
+                    console.error('Error:', error);
+                    displayMessage('抱歉，发生错误 ');
+                })
+                .finally(() => {
+                    // 重新启用发送按钮
+                    sendButton.disabled = false;
+                });
+            }
+            
+            function createTypingIndicator() {
+                const typingDiv = document.createElement('div');
+                typingDiv.classList.add('message', 'typing-indicator');
+                typingDiv.textContent = 'AI正在高速运转ing...';
+                return typingDiv;
+            }
+            
+            function displayMessage(content, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', sender + '-message');
+                messageDiv.textContent = content;
+                
+                const timestampDiv = document.createElement('div');
+                timestampDiv.classList.add('timestamp');
+                timestampDiv.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                messageDiv.appendChild(timestampDiv);
+                chatBox.appendChild(messageDiv);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            
+            sendButton.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

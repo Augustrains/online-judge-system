@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题目列表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1a73e8',
+                        secondary: '#6c757d',
+                        success: '#34a853',
+                        danger: '#ea4335',
+                        warning: '#fbbc05',
+                        info: '#4285f4',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .question-card {
+                @apply bg-white rounded-lg shadow-md p-4 mb-4 transition-all duration-300 hover:shadow-lg;
+            }
+            .detail-section {
+                @apply bg-gray-50 rounded-lg p-4 mt-4 border border-gray-200;
+            }
+            .btn-primary {
+                @apply bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-all;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white px-4 py-2 rounded-md hover:bg-secondary/90 transition-all;
+            }
+            .btn-outline {
+                @apply border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-all;
+            }
+            .badge {
+                @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+            }
+            .badge-easy {
+                @apply bg-green-100 text-green-800;
+            }
+            .badge-medium {
+                @apply bg-yellow-100 text-yellow-800;
+            }
+            .badge-hard {
+                @apply bg-red-100 text-red-800;
+            }
+            .description-box {
+                @apply bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- 顶部导航 -->
+        <header class="mb-8">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-800">题目列表</h1>
+                <div class="flex space-x-2">
+                    <button id="toggleAllDetails" class="btn-outline">
+                        <i class="fa fa-list-ul mr-1"></i> 显示所有细节
+                    </button>
+                    <button id="backButton" class="btn-outline">
+                        <i class="fa fa-arrow-left mr-1"></i> 返回
+                    </button>
+                </div>
+            </div>
+            <p class="text-gray-600 mt-2">查看所有编程题目及其详细信息</p>
+        </header>
+
+        <!-- 搜索和筛选 -->
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-grow">
+                    <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">搜索</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa fa-search text-gray-400"></i>
+                        </div>
+                        <input type="text" id="searchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="搜索题目...">
+                    </div>
+                </div>
+                <div class="w-full md:w-48">
+                    <label for="difficultyFilter" class="block text-sm font-medium text-gray-700 mb-1">难度</label>
+                    <select id="difficultyFilter" class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        <option value="all">全部难度</option>
+                        <option value="easy">easy</option>
+                        <option value="medium">medium</option>
+                        <option value="hard">hard</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 加载状态 -->
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary/30 border-t-primary"></div>
+            <p class="mt-2 text-gray-600">正在加载题目数据...</p>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="errorMessage" class="hidden bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fa fa-exclamation-triangle text-red-500"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-red-700" id="errorText">加载题目数据失败，请稍后重试。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题目列表 -->
+        <div id="questionsList" class="space-y-4"></div>
+
+        <!-- 空状态 -->
+        <div id="emptyState" class="hidden text-center py-16">
+            <div class="text-gray-400 mb-4">
+                <i class="fa fa-folder-open-o text-5xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900">没有找到题目</h3>
+            <p class="mt-2 text-sm text-gray-500">请修改筛选条件</p>
+        </div>
+    </div>
+
+    <script>
+        // 从URL获取用户名参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get('name') || 'default_user';
+        
+        // DOM元素
+        const loadingElement = document.getElementById('loading');
+        const errorMessageElement = document.getElementById('errorMessage');
+        const errorTextElement = document.getElementById('errorText');
+        const questionsListElement = document.getElementById('questionsList');
+        const emptyStateElement = document.getElementById('emptyState');
+        const toggleAllDetailsButton = document.getElementById('toggleAllDetails');
+        const searchInput = document.getElementById('searchInput');
+        const difficultyFilter = document.getElementById('difficultyFilter');
+        const backButton = document.getElementById('backButton');
+        
+        // 全局状态
+        let questionsData = [];
+        let allDetailsVisible = false;
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchQuestions();
+            
+            // 事件监听
+            toggleAllDetailsButton.addEventListener('click', toggleAllDetails);
+            searchInput.addEventListener('input', filterQuestions);
+            difficultyFilter.addEventListener('change', filterQuestions);
+            backButton.addEventListener('click', () => {
+                window.history.back();
+            });
+        });
+        
+        // 获取题目数据
+        async function fetchQuestions() {
+            try {
+                // 显示加载状态
+                showLoading(true);
+                hideError();
+                hideEmptyState();
+                
+                // 调用API获取题目数据
+                const response = await fetch(`/questionslist?`);
+                
+                if (!response.ok) {
+                    throw new Error(`获取题目数据失败`);
+                }
+                
+                questionsData = await response.json();
+                
+                if (questionsData.length === 0) {
+                    showEmptyState();
+                } else {
+                    renderQuestions(questionsData);
+                }
+            } catch (error) {
+                console.error('获取题目数据出错');
+                showError(`获取题目数据失败`);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // 渲染题目列表
+        function renderQuestions(questions) {
+            questionsListElement.innerHTML = '';
+            
+            questions.forEach(question => {
+                const questionCard = createQuestionCard(question);
+                questionsListElement.appendChild(questionCard);
+            });
+        }
+        
+        // 创建题目卡片
+        function createQuestionCard(question) {
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            card.dataset.id = question.id;
+            
+            // 基础信息
+            const baseInfo = document.createElement('div');
+            baseInfo.className = 'flex flex-col md:flex-row md:items-center justify-between';
+            
+            const titleContainer = document.createElement('div');
+            titleContainer.className = 'flex items-center mb-2 md:mb-0';
+            
+            const idBadge = document.createElement('span');
+            idBadge.className = 'bg-primary/10 text-primary font-medium px-3 py-1 rounded-md mr-3';
+            idBadge.textContent = `#${question.id}`;
+            
+            const title = document.createElement('h3');
+            title.className = 'text-lg font-semibold text-gray-900';
+            title.textContent = question.title;
+            
+            titleContainer.appendChild(idBadge);
+            titleContainer.appendChild(title);
+            
+            const difficultyBadge = document.createElement('span');
+            difficultyBadge.className = `badge ${getDifficultyClass(question.difficulty)}`;
+            difficultyBadge.textContent = question.difficulty;
+            
+            baseInfo.appendChild(titleContainer);
+            baseInfo.appendChild(difficultyBadge);
+            
+            // 详情按钮
+            const detailsButton = document.createElement('button');
+            detailsButton.className = 'mt-3 w-full md:w-auto btn-outline flex items-center justify-center';
+            detailsButton.innerHTML = '<i class="fa fa-chevron-down mr-1"></i> 查看详情';
+            detailsButton.addEventListener('click', () => toggleQuestionDetails(card, detailsButton));
+            
+            // 详情区域 (初始隐藏)
+            const detailsSection = document.createElement('div');
+            detailsSection.className = 'detail-section hidden';
+            
+            // 题目描述
+            if (question.desc && question.desc.trim() !== '') {
+                const descriptionSection = document.createElement('div');
+                descriptionSection.className = 'description-box';
+                
+                const descriptionHeader = document.createElement('h4');
+                descriptionHeader.className = 'font-medium text-gray-800 mb-2';
+                descriptionHeader.textContent = '题目描述';
+                
+                const descriptionContent = document.createElement('p');
+                descriptionContent.className = 'text-gray-700 whitespace-pre-line';
+                descriptionContent.textContent = question.desc;
+                
+                descriptionSection.appendChild(descriptionHeader);
+                descriptionSection.appendChild(descriptionContent);
+                detailsSection.appendChild(descriptionSection);
+            }
+            
+            // 复杂度信息
+            const complexityContainer = document.createElement('div');
+            complexityContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-4';
+            
+            const timeComplexity = createDetailItem('时间复杂度', question.timeComplexity);
+            const spaceComplexity = createDetailItem('空间复杂度', question.spaceComplexity);
+            
+            complexityContainer.appendChild(timeComplexity);
+            complexityContainer.appendChild(spaceComplexity);
+            
+            // 代码信息
+            const codeContainer = document.createElement('div');
+            codeContainer.className = 'space-y-4';
+            
+            const headerSection = createCodeSection('Header', question.header);
+            const tailSection = createCodeSection('Tail', question.tail);
+            
+            codeContainer.appendChild(headerSection);
+            codeContainer.appendChild(tailSection);
+            
+            detailsSection.appendChild(complexityContainer);
+            detailsSection.appendChild(codeContainer);
+            
+            // 组装卡片
+            card.appendChild(baseInfo);
+            card.appendChild(detailsButton);
+            card.appendChild(detailsSection);
+            
+            // 如果全局设置为显示详情，则立即展开
+            if (allDetailsVisible) {
+                toggleQuestionDetails(card, detailsButton);
+            }
+            
+            return card;
+        }
+        
+        // 创建详情项
+        function createDetailItem(label, value) {
+            const item = document.createElement('div');
+            item.className = 'flex flex-col';
+            
+            const labelElement = document.createElement('span');
+            labelElement.className = 'text-sm text-gray-500';
+            labelElement.textContent = label;
+            
+            const valueElement = document.createElement('span');
+            valueElement.className = 'text-base font-medium text-gray-900';
+            valueElement.textContent = value || '未提供';
+            
+            item.appendChild(labelElement);
+            item.appendChild(valueElement);
+            
+            return item;
+        }
+        
+        // 创建代码部分
+        function createCodeSection(title, code) {
+            const section = document.createElement('div');
+            
+            const header = document.createElement('div');
+            header.className = 'bg-gray-100 border border-gray-200 rounded-t-md px-4 py-2 flex justify-between items-center';
+            
+            const titleElement = document.createElement('span');
+            titleElement.className = 'font-medium text-gray-800';
+            titleElement.textContent = title;
+            
+            const copyButton = document.createElement('button');
+            copyButton.className = 'text-xs text-primary hover:text-primary/80 flex items-center';
+            copyButton.innerHTML = '<i class="fa fa-copy mr-1"></i> 复制';
+            copyButton.addEventListener('click', () => copyToClipboard(code));
+            
+            header.appendChild(titleElement);
+            header.appendChild(copyButton);
+            
+            const codeBlock = document.createElement('pre');
+            codeBlock.className = 'bg-gray-800 text-white p-4 rounded-b-md overflow-x-auto text-sm font-mono';
+            
+            const codeContent = document.createElement('code');
+            codeContent.textContent = code || '未提供';
+            
+            codeBlock.appendChild(codeContent);
+            section.appendChild(header);
+            section.appendChild(codeBlock);
+            
+            return section;
+        }
+        
+        // 切换题目详情显示/隐藏
+        function toggleQuestionDetails(card, button) {
+            const detailsSection = card.querySelector('.detail-section');
+            const isHidden = detailsSection.classList.contains('hidden');
+            
+            if (isHidden) {
+                detailsSection.classList.remove('hidden');
+                button.innerHTML = '<i class="fa fa-chevron-up mr-1"></i> 隐藏详情';
+                card.classList.add('shadow-lg');
+            } else {
+                detailsSection.classList.add('hidden');
+                button.innerHTML = '<i class="fa fa-chevron-down mr-1"></i> 查看详情';
+                card.classList.remove('shadow-lg');
+            }
+        }
+        
+        // 切换所有详情显示/隐藏
+        function toggleAllDetails() {
+            allDetailsVisible = !allDetailsVisible;
+            
+            const cards = document.querySelectorAll('.question-card');
+            const buttons = document.querySelectorAll('.question-card button');
+            
+            cards.forEach(card => {
+                const detailsSection = card.querySelector('.detail-section');
+                if (allDetailsVisible) {
+                    detailsSection.classList.remove('hidden');
+                    card.classList.add('shadow-lg');
+                } else {
+                    detailsSection.classList.add('hidden');
+                    card.classList.remove('shadow-lg');
+                }
+            });
+            
+            buttons.forEach(button => {
+                if (allDetailsVisible) {
+                    button.innerHTML = '<i class="fa fa-chevron-up mr-1"></i> 隐藏详情';
+                } else {
+                    button.innerHTML = '<i class="fa fa-chevron-down mr-1"></i> 查看详情';
+                }
+            });
+            
+            toggleAllDetailsButton.innerHTML = allDetailsVisible ? 
+                '<i class="fa fa-list-ul mr-1"></i> 隐藏所有细节' : 
+                '<i class="fa fa-list-ul mr-1"></i> 显示所有细节';
+        }
+        
+        // 筛选题目
+        function filterQuestions() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const difficulty = difficultyFilter.value;
+            
+            const filteredQuestions = questionsData.filter(question => {
+                const matchesSearch = question.title.toLowerCase().includes(searchTerm) || 
+                                      question.id.toString().includes(searchTerm) ||
+                                      (question.desc && question.desc.toLowerCase().includes(searchTerm));
+                
+                const matchesDifficulty = difficulty === 'all' || 
+                                         question.difficulty.toLowerCase() === difficulty;
+                
+                return matchesSearch && matchesDifficulty;
+            });
+            
+            if (filteredQuestions.length === 0) {
+                showEmptyState();
+            } else {
+                hideEmptyState();
+                renderQuestions(filteredQuestions);
+            }
+        }
+        
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    alert('代码已复制到剪贴板');
+                })
+                .catch(err => {
+                    console.error('复制失败');
+                    alert('复制失败，请手动复制');
+                });
+        }
+        
+        // 辅助函数
+        function showLoading(show) {
+            loadingElement.style.display = show ? 'block' : 'none';
+        }
+        
+        function showError(message) {
+            errorTextElement.textContent = message;
+            errorMessageElement.classList.remove('hidden');
+        }
+        
+        function hideError() {
+            errorMessageElement.classList.add('hidden');
+        }
+        
+        function showEmptyState() {
+            emptyStateElement.classList.remove('hidden');
+            questionsListElement.innerHTML = '';
+        }
+        
+        function hideEmptyState() {
+            emptyStateElement.classList.add('hidden');
+        }
+        
+        function getDifficultyClass(difficulty) {
+            switch (difficulty.toLowerCase()) {
+                case 'easy': return 'badge-easy';
+                case 'medium': return 'badge-medium';
+                case 'hard': return 'badge-hard';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+    </script>
+</body>
+</html>

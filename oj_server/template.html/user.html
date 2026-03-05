@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户列表 - 密码隐藏示例</title>
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-list {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .user-list th,
+        .user-list td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .user-list th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .password-toggle {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            color: #1a73e8;
+        }
+
+        .password-toggle::after {
+            content: '\f06e'; /* Font Awesome eye icon */
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            margin-left: 5px;
+        }
+
+        .password-toggle.show::after {
+            content: '\f070'; /* Font Awesome eye-slash icon */
+        }
+
+        .error-message {
+            color: red;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 4px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>用户列表</h2>
+        
+        <!-- 加载状态 -->
+        <div id="loading" class="loading">
+            <i class="fa fa-spinner fa-spin"></i> 加载中...
+        </div>
+        
+        <table class="user-list" id="userTable">
+            <thead>
+                <tr>
+                    <th>用户名</th>
+                    <th>密码</th>
+                </tr>
+            </thead>
+            <tbody id="userBody">
+                <!-- 动态填充用户数据 -->
+            </tbody>
+        </table>
+        
+        <!-- 错误提示 -->
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+    </div>
+
+    <!-- 引入Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script>
+        const fetchUsers = async () => {
+            try {  
+                console.log('开始获取用户数据...');
+                const response = await fetch('http://8.140.17.222:8080/getusers', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                console.log('收到响应:', response);
+
+                // 检查HTTP状态码
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`获取用户列表失败: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+
+                // 解析JSON响应
+                const users = await response.json();
+                console.log('解析后的用户数据:', users);
+                return users;
+            } catch (error) {
+                console.error('获取用户数据失败:', error);
+                // 显示错误信息
+                const errorElement = document.getElementById('errorMessage');
+                errorElement.textContent = `错误: ${error.message}`;
+                errorElement.style.display = 'block';
+                throw error;
+            }
+        };
+
+        // 渲染用户列表
+        const renderUsers = (users) => {
+            console.log('开始渲染用户数据:', users);
+            const userBody = document.getElementById('userBody');
+            userBody.innerHTML = ''; // 清空原有内容
+
+            // 隐藏加载状态
+            document.getElementById('loading').style.display = 'none';
+            
+            if (!users || users.length === 0) {
+                console.log('没有用户数据或数据为空');
+                // 空列表处理
+                const emptyRow = document.createElement('tr');
+                const emptyCell = document.createElement('td');
+                emptyCell.colSpan = 2;
+                emptyCell.className = 'text-center';
+                emptyCell.textContent = '没有找到用户数据';
+                emptyRow.appendChild(emptyCell);
+                userBody.appendChild(emptyRow);
+                return;
+            }
+
+            // 渲染用户数据
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                
+                // 用户名
+                const nameTd = document.createElement('td');
+                nameTd.textContent = user.name || '未命名用户';
+                
+                // 密码（带切换功能）
+                const passwordTd = document.createElement('td');
+                passwordTd.className = 'password-container';
+                
+                const passwordSpan = document.createElement('span');
+                passwordSpan.className = 'password-value';
+                passwordSpan.dataset.realPassword = user.password || ''; // 存储真实密码
+                passwordSpan.textContent = '******'; // 默认隐藏
+                
+                const toggleIcon = document.createElement('span');
+                toggleIcon.className = 'password-toggle';
+                toggleIcon.innerHTML = ' <i class="fas fa-eye"></i>'; // 使用Font Awesome图标
+                toggleIcon.addEventListener('click', () => {
+                    togglePasswordVisibility(toggleIcon, passwordSpan);
+                });
+                
+                passwordTd.appendChild(passwordSpan);
+                passwordTd.appendChild(toggleIcon);
+                
+                tr.appendChild(nameTd);
+                tr.appendChild(passwordTd);
+                userBody.appendChild(tr);
+            });
+            console.log('用户数据渲染完成');
+        };
+
+        // 切换密码可见性
+        const togglePasswordVisibility = (icon, span) => {
+            const isShow = icon.classList.toggle('show');
+            const eyeIcon = icon.querySelector('i');
+            if (isShow) {
+                span.textContent = span.dataset.realPassword || '';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                span.textContent = '******';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        };
+
+        // 初始化
+        (async () => {
+            try {
+                console.log('初始化开始...');
+                // 显示加载状态
+                document.getElementById('loading').style.display = 'block';
+                
+                // 获取并渲染用户数据
+                const users = await fetchUsers();
+                renderUsers(users);
+            } catch (error) {
+                console.error('初始化失败:', error);
+                // 错误已在fetchUsers中处理
+                document.getElementById('loading').style.display = 'none';
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能天气应用</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#4080FF',
+                        accent: '#86B4FF',
+                        dark: '#333333',
+                        light: '#F5F7FA',
+                        success: '#52C41A',
+                        warning: '#FAAD14',
+                        danger: '#FF4D4F'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+            .btn-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .loading-spinner {
+                border-top-color: #165DFF;
+                animation: spinner 0.8s linear infinite;
+            }
+            @keyframes spinner {
+                to { transform: rotate(360deg); }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter text-dark">
+    <!-- 顶部导航 -->
+    <header class="bg-primary text-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-cloud-sun text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold">智能天气应用</h1>
+            </div>
+            <div class="hidden md:flex items-center space-x-4">
+                <button id="ip-locate-btn" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-map-marker-alt"></i>
+                    <span>IP定位</span>
+                </button>
+                <button id="geo-locate-btn" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-location-arrow"></i>
+                    <span>GPS定位</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 移动端定位按钮 -->
+        <div class="md:hidden flex justify-center space-x-4 mb-6">
+            <button id="ip-locate-btn-mobile" class="bg-primary text-white px-4 py-2 rounded-lg shadow-md btn-hover flex items-center">
+                <i class="fa-solid fa-map-marker-alt mr-2"></i>
+                IP定位
+            </button>
+            <button id="geo-locate-btn-mobile" class="bg-primary text-white px-4 py-2 rounded-lg shadow-md btn-hover flex items-center">
+                <i class="fa-solid fa-location-arrow mr-2"></i>
+                GPS定位
+            </button>
+        </div>
+
+        <!-- 城市选择 -->
+        <div class="mb-6 animate-fade-in">
+            <label for="area-select" class="block text-sm font-medium text-gray-700 mb-2">选择城市:</label>
+            <div class="relative">
+                <select id="area-select" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-lg appearance-none bg-white">
+                    <option value="">选择地区</option>
+                    <option value="101010100">北京</option>
+                    <option value="101020100">上海</option>
+                    <option value="101030100">天津</option>
+                    <option value="101040100">重庆</option>
+                    <option value="101050101">哈尔滨</option>
+                    <option value="101060101">长春</option>
+                    <option value="101070101">沈阳</option>
+                    <option value="101080101">石家庄</option>
+                    <option value="101090101">太原</option>
+                    <option value="101100101">西安</option>
+                    <option value="101110101">济南</option>
+                    <option value="101120101">青岛</option>
+                    <option value="101130101">南京</option>
+                    <option value="101140101">杭州</option>
+                    <option value="101150101">宁波</option>
+                    <option value="101160101">合肥</option>
+                    <option value="101170101">福州</option>
+                    <option value="101180101">厦门</option>
+                    <option value="101190101">南昌</option>
+                    <option value="101200101">长沙</option>
+                    <option value="101210101">武汉</option>
+                    <option value="101220101">广州</option>
+                    <option value="101230101">深圳</option>
+                    <option value="101240101">珠海</option>
+                    <option value="101250101">南宁</option>
+                    <option value="101260101">成都</option>
+                    <option value="101270101">贵阳</option>
+                    <option value="101280101">昆明</option>
+                    <option value="101290101">拉萨</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 加载状态 -->
+        <div id="loading-container" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-xl flex items-center space-x-4">
+                <div class="w-10 h-10 rounded-full border-4 border-gray-200 loading-spinner"></div>
+                <span id="loading-text" class="text-lg font-medium">正在获取天气数据...</span>
+            </div>
+        </div>
+
+        <!-- 当前天气卡片 -->
+        <div id="current-weather-card" class="mb-6 animate-fade-in opacity-0 transition-opacity duration-500">
+            <div class="bg-white rounded-xl shadow-lg p-6 card-shadow card-hover">
+                <div class="flex flex-col md:flex-row md:items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center">
+                            <i class="fa-solid fa-location-dot text-primary mr-2"></i>
+                            <span id="location">加载中...</span>
+                        </h2>
+                        <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div class="bg-blue-50 rounded-lg p-4 flex items-center">
+                                <i class="fa-solid fa-cloud text-primary text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-gray-500">天气状况</p>
+                                    <p id="weather" class="text-lg font-semibold">--</p>
+                                </div>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-4 flex items-center">
+                                <i class="fa-solid fa-thermometer-half text-primary text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-gray-500">温度</p>
+                                    <p id="temp" class="text-lg font-semibold">--</p>
+                                </div>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-4 flex items-center">
+                                <i class="fa-solid fa-wind text-primary text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-gray-500">风力</p>
+                                    <p id="wind" class="text-lg font-semibold">--</p>
+                                </div>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-4 flex items-center">
+                                <i class="fa-solid fa-clock text-primary text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-gray-500">更新时间</p>
+                                    <p id="update-time" class="text-lg font-semibold">--</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 md:mt-0 flex justify-center">
+                        <div class="relative w-40 h-40 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
+                            <i id="weather-icon" class="fa-solid fa-cloud-sun text-7xl text-primary/80"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3小时预报 -->
+        <div id="hourly-forecast" class="mb-6 animate-fade-in opacity-0 transition-opacity duration-500">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fa-solid fa-calendar-day text-primary mr-2"></i>
+                逐3小时预报
+            </h2>
+            <div id="hourly-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3 overflow-x-auto pb-2">
+                <!-- 3小时预报数据将在这里动态生成 -->
+                <div class="flex justify-center w-full col-span-full text-gray-500">
+                    <p>请选择或定位城市以查看预报</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史天气记录 -->
+        <div id="historical-weather" class="animate-fade-in opacity-0 transition-opacity duration-500">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fa-solid fa-history text-primary mr-2"></i>
+                历史天气记录
+            </h2>
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <!-- 优化表格高度，添加垂直滚动条 -->
+                    <div class="max-h-[400px] overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="sticky top-0 bg-gray-50 z-10">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">记录时间</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">地区</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">天气状况</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">温度</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">风力</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table" class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无历史记录</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white mt-12 py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-cloud-sun text-xl"></i>
+                        <span class="text-lg font-bold">智能天气应用</span>
+                    </div>
+                    <p class="text-gray-400 mt-2 text-sm">提供实时天气数据和预报服务</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa-brands fa-github text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa-brands fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa-brands fa-linkedin text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400 text-sm">
+                &copy; 2025 智能天气应用 | 数据来源：心知天气
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // DOM元素引用
+        const ipLocateBtn = document.getElementById('ip-locate-btn');
+        const geoLocateBtn = document.getElementById('geo-locate-btn');
+        const ipLocateBtnMobile = document.getElementById('ip-locate-btn-mobile');
+        const geoLocateBtnMobile = document.getElementById('geo-locate-btn-mobile');
+        const areaSelect = document.getElementById('area-select');
+        const locationDisplay = document.getElementById('location');
+        const weatherDisplay = document.getElementById('weather');
+        const tempDisplay = document.getElementById('temp');
+        const windDisplay = document.getElementById('wind');
+        const updateTimeDisplay = document.getElementById('update-time');
+        const weatherIcon = document.getElementById('weather-icon');
+        const hourlyContainer = document.getElementById('hourly-container');
+        const historyTable = document.getElementById('history-table');
+        const loadingContainer = document.getElementById('loading-container');
+        const loadingText = document.getElementById('loading-text');
+        const currentWeatherCard = document.getElementById('current-weather-card');
+        const hourlyForecast = document.getElementById('hourly-forecast');
+        const historicalWeather = document.getElementById('historical-weather');
+
+        // 显示加载状态
+        function showLoading(text = '正在获取天气数据...') {
+            loadingText.textContent = text;
+            loadingContainer.classList.remove('hidden');
+        }
+
+        // 隐藏加载状态
+        function hideLoading() {
+            loadingContainer.classList.add('hidden');
+        }
+
+        // 更新天气图标
+        function updateWeatherIcon(weatherText) {
+            const weatherConditions = {
+                '晴': 'fa-sun',
+                '多云': 'fa-cloud-sun',
+                '阴': 'fa-cloud',
+                '小雨': 'fa-cloud-rain',
+                '中雨': 'fa-cloud-showers-heavy',
+                '大雨': 'fa-tint',
+                '雷阵雨': 'fa-bolt',
+                '雾': 'fa-smog',
+                '雪': 'fa-snowflake'
+            };
+
+            // 根据天气文本设置图标
+            let iconClass = 'fa-cloud'; // 默认图标
+            for (const condition in weatherConditions) {
+                if (weatherText.includes(condition)) {
+                    iconClass = weatherConditions[condition];
+                    break;
+                }
+            }
+
+            weatherIcon.className = `fa-solid ${iconClass} text-7xl text-primary/80`;
+        }
+
+        // 显示天气数据
+        function displayWeatherData(weatherData) {
+            console.log('显示天气数据:', weatherData);
+            locationDisplay.textContent = weatherData.location_name || '未知位置';
+            weatherDisplay.textContent = weatherData.weather || '未知';
+            tempDisplay.textContent = `${weatherData.temp || '未知'}°C`;
+            windDisplay.textContent = weatherData.wind || '未知';
+            
+            // 设置更新时间
+            const now = new Date();
+            updateTimeDisplay.textContent = now.toLocaleString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            // 更新天气图标
+            updateWeatherIcon(weatherData.weather || '');
+
+            // 显示卡片
+            currentWeatherCard.style.opacity = '1';
+        }
+
+        // 显示3小时预报数据
+        function displayHourlyForecast(forecastData) {
+            hourlyContainer.innerHTML = '';
+
+            if (!forecastData || !forecastData.th_hours || forecastData.th_hours.length === 0) {
+                hourlyContainer.innerHTML = `
+                    <div class="flex justify-center w-full col-span-full text-gray-500">
+                        <p>暂无3小时预报数据</p>
+                    </div>
+                `;
+                return;
+            }
+
+            console.log('显示3小时预报数据:', forecastData);
+
+            // 显示预报数据
+            forecastData.th_hours.forEach(hourData => {
+                const date = new Date(hourData.data_time);
+                const hour = date.getHours();
+                const timeStr = `${hour}时`;
+                
+                // 为每个时间段创建一个卡片
+                const hourCard = document.createElement('div');
+                hourCard.className = 'bg-white rounded-lg shadow p-4 card-shadow card-hover animate-fade-in';
+                hourCard.style.animationDelay = `${0.1 * (hourData.id || 0)}s`;
+                
+                // 根据天气情况设置图标
+                let weatherIcon = 'fa-cloud';
+                if (hourData.text.includes('晴')) weatherIcon = 'fa-sun';
+                else if (hourData.text.includes('多云')) weatherIcon = 'fa-cloud-sun';
+                else if (hourData.text.includes('雨')) weatherIcon = 'fa-cloud-rain';
+                else if (hourData.text.includes('雪')) weatherIcon = 'fa-snowflake';
+                else if (hourData.text.includes('雷')) weatherIcon = 'fa-bolt';
+                else if (hourData.text.includes('雾')) weatherIcon = 'fa-smog';
+                
+                hourCard.innerHTML = `
+                    <div class="text-center">
+                        <p class="text-sm text-gray-500 mb-1">${timeStr}</p>
+                        <div class="flex justify-center my-2">
+                            <i class="fa-solid ${weatherIcon} text-primary text-xl"></i>
+                        </div>
+                        <p class="font-medium">${hourData.text}</p>
+                        <p class="text-gray-600">${hourData.temp_fc}°C</p>
+                        <p class="text-xs text-gray-500 mt-1">${hourData.wind_class}</p>
+                    </div>
+                `;
+                
+                hourlyContainer.appendChild(hourCard);
+            });
+            
+            // 显示预报部分
+            hourlyForecast.style.opacity = '1';
+        }
+
+        // 获取并显示3小时预报
+        function fetchAndDisplayHourlyForecast(areaCode) {
+            if (!areaCode) return;
+            
+            showLoading('正在获取预报数据...');
+            
+            fetch(`/api/3hour_forecast?area_code=${areaCode}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误，状态码: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('获取3小时预报数据成功:', data);
+                    displayHourlyForecast(data);
+                })
+                .catch(error => {
+                    console.error('获取3小时预报数据失败:', error);
+                    hourlyContainer.innerHTML = `
+                        <div class="flex justify-center w-full col-span-full text-gray-500">
+                            <p>获取预报数据失败</p>
+                        </div>
+                    `;
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+
+        // 通过IP定位获取天气
+        function fetchWeatherByIP() {
+            showLoading('正在通过IP定位...');
+            
+            fetch('/api/weather')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误，状态码: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('通过IP获取天气数据成功:', data);
+                    if (data && data.length > 0) {
+                        displayWeatherData(data[0]);
+                        
+                        // 获取并显示3小时预报
+                        const areaCode = data[0].area_code;
+                        if (areaCode) {
+                            fetchAndDisplayHourlyForecast(areaCode);
+                        }
+                        
+                        // 显示历史记录
+                        fetchAndDisplayHistory();
+                    } else {
+                        locationDisplay.textContent = '位置: 定位失败';
+                        alert('无法获取天气数据，请稍后再试');
+                    }
+                })
+                .catch(error => {
+                    console.error('IP定位获取天气数据失败:', error);
+                    locationDisplay.textContent = '位置: 定位失败';
+                    alert(`获取天气数据失败: ${error.message}`);
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+
+        // 通过GPS定位获取天气
+        function fetchWeatherByGPS() {
+            if (!navigator.geolocation) {
+                alert("您的浏览器不支持地理位置定位");
+                return;
+            }
+            
+            showLoading('正在通过GPS定位...');
+            
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                  const latitude = position.coords.latitude.toFixed(2);
+                  const longitude = position.coords.longitude.toFixed(2);
+                
+                    
+                    console.log('获取GPS坐标成功:', { latitude, longitude });
+                    
+                    // 发送GPS坐标到后端
+                    fetch('/api/gps_weather', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ latitude, longitude })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP错误，状态码: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('通过GPS获取天气数据成功:', data);
+                        if (data && data.length > 0) {
+                            displayWeatherData(data[0]);
+                            
+                            // 获取并显示3小时预报
+                            const areaCode = data[0].area_code;
+                            if (areaCode) {
+                                fetchAndDisplayHourlyForecast(areaCode);
+                            }
+                            
+                            // 显示历史记录
+                            fetchAndDisplayHistory();
+                        } else {
+                            locationDisplay.textContent = '位置: 定位失败';
+                            alert('无法获取天气数据，请稍后再试');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('GPS定位获取天气数据失败:', error);
+                        locationDisplay.textContent = '位置: 定位失败';
+                        alert(`获取天气数据失败: ${error.message}`);
+                    })
+                    .finally(() => {
+                        hideLoading();
+                    });
+                },
+                error => {
+                    console.error('获取地理位置失败:', error);
+                    hideLoading();
+                    
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            locationDisplay.textContent = '位置: 用户拒绝了地理位置请求';
+                            alert('您拒绝了位置请求，无法使用GPS定位功能');
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            locationDisplay.textContent = '位置: 位置信息不可用';
+                            alert('位置信息不可用，请稍后再试');
+                            break;
+                        case error.TIMEOUT:
+                            locationDisplay.textContent = '位置: 获取位置超时';
+                            alert('获取位置超时，请检查您的网络连接');
+                            break;
+                        case error.UNKNOWN_ERROR:
+                            locationDisplay.textContent = '位置: 发生未知错误';
+                            alert('发生未知错误，无法获取位置信息');
+                            break;
+                    }
+                },
+                { timeout: 15000 }
+            );
+        }
+
+        // 获取并显示历史天气记录
+        function fetchAndDisplayHistory() {
+            showLoading('正在获取历史记录...');
+            
+            fetch('/api/history')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误，状态码: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('获取历史天气数据成功:', data);
+                    historyTable.innerHTML = '';
+                    
+                    if (data && data.length > 0) {
+                        // 按记录时间降序排序（最新的记录在前）
+                        data.sort((a, b) => new Date(b.record_time) - new Date(a.record_time));
+                        
+                        data.forEach(item => {
+                            const row = document.createElement('tr');
+                            row.className = 'hover:bg-gray-50 transition-colors';
+                            
+                            // 格式化日期时间
+                            const date = new Date(item.record_time);
+                            const formattedDate = date.toLocaleString('zh-CN', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                                
+                            });
+                            
+                            row.innerHTML = `
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formattedDate}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.location_name || '未知'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.weather || '未知'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.temp || '未知'}°C</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.wind || '未知'}</td>
+                            `;
+                            
+                            historyTable.appendChild(row);
+                        });
+                    } else {
+                        historyTable.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无历史记录</td>
+                            </tr>
+                        `;
+                    }
+                    
+                    // 显示历史记录部分
+                    historicalWeather.style.opacity = '1';
+                })
+                .catch(error => {
+                    console.error('获取历史天气数据失败:', error);
+                    historyTable.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">获取历史记录失败</td>
+                        </tr>
+                    `;
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+
+        // 绑定按钮事件
+        ipLocateBtn.addEventListener('click', fetchWeatherByIP);
+        geoLocateBtn.addEventListener('click', fetchWeatherByGPS);
+        ipLocateBtnMobile.addEventListener('click', fetchWeatherByIP);
+        geoLocateBtnMobile.addEventListener('click', fetchWeatherByGPS);
+
+        // 城市选择事件
+        areaSelect.addEventListener('change', () => {
+            const selectedAreaCode = areaSelect.value;
+            if (selectedAreaCode) {
+                showLoading('正在获取天气数据...');
+                
+                // 直接使用地区代码作为参数
+                fetch(`/api/weather?area_codes=${selectedAreaCode}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP错误，状态码: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('获取指定地区天气数据成功:', data);
+                        // 查找匹配的地区数据
+                        let selectedWeather = data.find(item => item.area_code === selectedAreaCode);
+
+                        // 如果没找到，使用第一个结果
+                        if (!selectedWeather && data.length > 0) {
+                            selectedWeather = data[0];
+                        }
+
+                        if (selectedWeather) {
+                            // 更新选择框的值为实际选择的地区
+                            areaSelect.value = selectedAreaCode;
+                            displayWeatherData(selectedWeather);
+
+                            // 获取并显示3小时预报
+                            fetchAndDisplayHourlyForecast(selectedAreaCode);
+                            
+                            // 显示历史记录
+                            fetchAndDisplayHistory();
+                        } else {
+                            locationDisplay.textContent = `位置: 无法获取数据`;
+                            alert('无法获取所选地区的天气数据');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('获取指定地区天气数据失败:', error);
+                        locationDisplay.textContent = `位置: 获取数据失败`;
+                        alert(`获取天气数据失败: ${error.message}`);
+                    })
+                    .finally(() => {
+                        hideLoading();
+                    });
+            } else {
+                locationDisplay.textContent = '位置: 请选择地区';
+            }
+        });
+
+        // 页面加载完成后，默认使用IP定位
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('页面加载完成，开始默认IP定位');
+            fetchWeatherByIP();
+        });
+    </script>
+</body>
+</html>

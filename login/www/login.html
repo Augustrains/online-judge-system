@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户登录系统</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        
+        
+        .login-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #1890ff;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn-login {
+            background-color: #1890ff;
+            color: white;
+        }
+        
+        .btn-login:hover {
+            background-color: #40a9ff;
+        }
+        
+        .btn-register {
+            background-color: #52c41a;
+            color: white;
+        }
+        
+        .btn-register:hover {
+            background-color: #73d13d;
+        }
+        
+        .btn-update {
+            background-color: #faad14;
+            color: white;
+        }
+        
+        .btn-update:hover {
+            background-color: #ffc53d;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 100px auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close:hover {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>用户登录</h1>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" placeholder="请输入用户名" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" placeholder="请输入密码" required>
+            </div>
+            <button type="submit" class="btn btn-login">登录</button>
+            <button type="button" id="registerBtn" class="btn btn-register">注册</button>
+            <button type="button" id="updateBtn" class="btn btn-update">修改密码</button>
+        </form>
+    </div>
+
+    <!-- 注册模态框 -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">用户注册</span>
+                <span class="close">&times;</span>
+            </div>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="regUsername">用户名</label>
+                    <input type="text" id="regUsername" name="username" placeholder="请输入用户名" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">密码</label>
+                    <input type="password" id="regPassword" name="password" placeholder="请输入密码" required>
+                </div>
+                <button type="submit" class="btn btn-register">注册</button>
+            </form>
+        </div>
+    </div>
+
+
+ <!-- 修改密码模态框 -->
+<div id="updateModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title">修改密码</span>
+            <span class="close">&times;</span>
+        </div>
+        <form id="updateForm">
+            <div class="form-group">
+                <label for="updateUsername">用户名</label>
+                <input type="text" id="updateUsername" name="username" placeholder="请输入用户名" required>
+            </div>
+            <div class="form-group">
+                <label for="oldPassword">原密码</label>
+                <input type="password" id="oldPassword" name="oldPassword" placeholder="请输入原密码" required>
+            </div>
+            <div class="form-group">
+                <label for="newPassword">新密码</label>
+                <input type="password" id="newPassword" name="newPassword" placeholder="请输入新密码" required>
+            </div>
+            <button type="submit" class="btn btn-update">修改</button>
+        </form>
+    </div>
+</div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // 登录功能
+            $("#loginForm").submit(function(e) {
+                e.preventDefault();
+                
+                const username = $("#username").val();
+                const password = $("#password").val();
+                
+                $.ajax({
+                    url: "/select",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        name: username,
+                        password: password
+                    }),
+                    success: function(response) {
+                        window.location.href = "http://8.140.17.222:8080/?name=" + encodeURIComponent(username);
+                    },
+                    error: function(xhr) {
+                        if (xhr.status === 401) {
+                            alert("用户名或密码错误");
+                        } else {
+                            alert("登录失败，请稍后重试");
+                        }
+                    }
+                });
+            });
+            
+            // 注册功能
+            $("#registerBtn").click(function() {
+                $("#registerModal").show();
+            });
+            
+            $("#registerForm").submit(function(e) {
+                e.preventDefault();
+                
+                const username = $("#regUsername").val();
+                const password = $("#regPassword").val();
+                
+                $.ajax({
+                    url: "/insert",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        name: username,
+                        password: password
+                    }),
+                    success: function(response) {
+                        alert("注册成功！");
+                        $("#registerModal").hide();
+                        $("#regUsername").val("");
+                        $("#regPassword").val("");
+                    },
+                    error: function(xhr) {
+                        if (xhr.status === 409) {
+                            alert("用户名已存在");
+                        } else {
+                            alert("注册失败，请稍后重试");
+                        }
+                    }
+                });
+            });
+            
+          // 修改密码功能
+$("#updateBtn").click(function() {
+    $("#updateModal").show();
+});
+
+$("#updateForm").submit(function(e) {
+    e.preventDefault();
+    
+    const username = $("#updateUsername").val();
+    const oldPassword = $("#oldPassword").val();
+    const newPassword = $("#newPassword").val();
+    
+    $.ajax({
+        url: "/update",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            username: username,
+            oldPassword: oldPassword,
+            newPassword: newPassword
+        }),
+        success: function(response) {
+            alert("密码修改成功！");
+            $("#updateModal").hide();
+            $("#updateUsername").val("");
+            $("#oldPassword").val("");
+            $("#newPassword").val("");
+        },
+        error: function(xhr) {
+            if (xhr.status === 401) {
+                alert("原密码错误");
+            } else if (xhr.status === 404) {
+                alert("用户名不存在");
+            } else {
+                alert("修改失败，请稍后重试");
+            }
+        }
+    });
+});
+            
+            // 关闭模态框
+            $(".close").click(function() {
+                $(this).closest(".modal").hide();
+            });
+            
+            // 点击模态框外部关闭
+            $(window).click(function(e) {
+                if ($(e.target).hasClass("modal")) {
+                    $(".modal").hide();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

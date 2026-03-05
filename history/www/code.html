@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码详情</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+       .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+       .code-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+       .code-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+            line-height: 1.5;
+        }
+
+       .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+       .error {
+            color: #dc3545;
+            text-align: center;
+            padding: 20px;
+        }
+
+       .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+       .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>代码详情</h1>
+        <div id="codeInfo" class="code-info">
+            <!-- 代码信息将在这里显示 -->
+        </div>
+        <div id="loading" class="loading">加载中...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="codeContainer" class="code-container" style="display: none;">
+            <pre id="codeContent"></pre>
+        </div>
+        <a href="javascript:history.back()" class="back-link">返回历史记录</a>
+    </div>
+
+    <script>
+        // 获取URL中的idd参数
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 页面加载时获取数据
+        document.addEventListener('DOMContentLoaded', function () {
+            const idd = getQueryParam('idd');
+            const name = getQueryParam('name');
+            if (!idd || !/^\d+$/.test(idd)) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = '无效的提交ID';
+                return;
+            }
+
+            fetchCodeData(idd,name);
+        });
+
+        // 获取代码数据
+        function fetchCodeData(idd,name) {
+            fetch(`/code/${idd}/${name}`)
+               .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应不正常');
+                    }
+                    return response.json();
+                })
+               .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+                    if (Array.isArray(data) && data.length === 0) {
+                        document.getElementById('error').style.display = 'block';
+                        document.getElementById('error').textContent = '没有找到对应的代码数据';
+                    } else if (Array.isArray(data) && data.length > 0) {
+                        renderCodeData(data[0]);
+                    } else if (data.error) {
+                        document.getElementById('error').style.display = 'block';
+                        document.getElementById('error').textContent = data.error;
+                    }
+                })
+               .catch(error => {
+                    console.error('发生错误');
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('error').textContent = '加载失败';
+                });
+        }
+
+        // 渲染代码数据
+        function renderCodeData(data) {
+            document.getElementById('codeInfo').innerHTML = `
+                <strong>提交ID: </strong>${data.idd}<br>
+                <strong>状态: </strong>${data.result}
+            `;
+
+            document.getElementById('codeContent').textContent = data.code;
+            document.getElementById('codeContainer').style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>

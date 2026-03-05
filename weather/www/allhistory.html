@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气应用</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        section {
+            padding: 20px;
+        }
+
+        #current-weather {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #historical-weather {
+            background-color: white;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #hourly-forecast {
+            background-color: white;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .hourly-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding: 10px 0;
+        }
+
+        .hourly-item {
+            min-width: 80px;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ccc;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .location-btn {
+            margin-right: 10px;
+        }
+
+        .loading {
+            display: none;
+            margin-left: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>天气应用</h1>
+    </header>
+    <section>
+        <button id="ip-locate-btn" class="location-btn">IP定位</button>
+        <button id="geo-locate-btn" class="location-btn">GPS定位</button>
+        <select id="area-select">
+            <option value="">选择地区</option>
+            <option value="101010100">北京</option>
+            <option value="101020100">上海</option>
+            <option value="101030100">天津</option>
+            <option value="101040100">重庆</option>
+            <option value="101050101">哈尔滨</option>
+            <option value="101060101">长春</option>
+            <option value="101070101">沈阳</option>
+            <option value="101080101">石家庄</option>
+            <option value="101090101">太原</option>
+            <option value="101100101">西安</option>
+            <option value="101110101">济南</option>
+            <option value="101120101">青岛</option>
+            <option value="101130101">南京</option>
+            <option value="101140101">杭州</option>
+            <option value="101150101">宁波</option>
+            <option value="101160101">合肥</option>
+            <option value="101170101">福州</option>
+            <option value="101180101">厦门</option>
+            <option value="101190101">南昌</option>
+            <option value="101200101">长沙</option>
+            <option value="101210101">武汉</option>
+            <option value="101220101">广州</option>
+            <option value="101230101">深圳</option>
+            <option value="101240101">珠海</option>
+            <option value="101250101">南宁</option>
+            <option value="101260101">成都</option>
+            <option value="101270101">贵阳</option>
+            <option value="101280101">昆明</option>
+            <option value="101290101">拉萨</option>
+        </select>
+        <span id="loading-ip" class="loading">正在通过IP定位...</span>
+        <span id="loading-geo" class="loading">正在通过GPS定位...</span>
+    </section>
+    <section id="current-weather">
+        <h2>当前天气</h2>
+        <p id="location"></p>
+        <p>天气: <span id="weather"></span></p>
+        <p>温度: <span id="temp"></span></p>
+        <p>风力: <span id="wind"></span></p>
+    </section>
+    <section id="hourly-forecast">
+        <h2>逐3小时预报</h2>
+        <div id="hourly-container" class="hourly-container">
+            <!-- 3小时预报数据将在这里动态生成 -->
+        </div>
+    </section>
+    <section id="historical-weather">
+        <h2>历史天气记录</h2>
+        <table id="history-table">
+            <thead>
+                <tr>
+                    <th>记录时间</th>
+                    <th>地区代码</th>
+                    <th>位置名称</th>
+                    <th>天气</th>
+                    <th>温度</th>
+                    <th>风力</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </section>
+    <script>
+        const ipLocateBtn = document.getElementById('ip-locate-btn');
+        const geoLocateBtn = document.getElementById('geo-locate-btn');
+        const areaSelect = document.getElementById('area-select');
+        const locationDisplay = document.getElementById('location');
+        const hourlyContainer = document.getElementById('hourly-container');
+        const loadingIp = document.getElementById('loading-ip');
+        const loadingGeo = document.getElementById('loading-geo');
+
+        // 显示天气数据的函数
+        function displayWeatherData(weatherData) {
+            locationDisplay.textContent = `位置: ${weatherData.location_name || '未知'}`;
+            document.getElementById('weather').textContent = `${weatherData.weather || '未知'}`;
+            document.getElementById('temp').textContent = `${weatherData.temp || '未知'}°C`;
+            document.getElementById('wind').textContent = `${weatherData.wind || '未知'}`;
+        }
+
+        // 显示3小时预报数据的函数
+        function displayHourlyForecast(forecastData) {
+            hourlyContainer.innerHTML = '';
+
+            if (!forecastData.th_hours || forecastData.th_hours.length === 0) {
+                hourlyContainer.innerHTML = '<p>暂无3小时预报数据</p>';
+                return;
+            }
+
+            forecastData.th_hours.forEach(hourData => {
+                const hourItem = document.createElement('div');
+                hourItem.className = 'hourly-item';
+
+                // 提取小时信息
+                const date = new Date(hourData.data_time);
+                const hour = date.getHours();
+                const timeStr = `${hour}时`;
+
+                hourItem.innerHTML = `
+                    <p>${timeStr}</p>
+                    <p>${hourData.text}</p>
+                    <p><strong>${hourData.temp_fc}°C</strong></p>
+                    <p>${hourData.wind_class}</p>
+                `;
+
+                hourlyContainer.appendChild(hourItem);
+            });
+        }
+
+        // 获取并显示3小时预报
+        function fetchAndDisplayHourlyForecast(areaCode) {
+            if (!areaCode) return;
+
+            fetch(`/api/3hour_forecast?area_code=${areaCode}`)
+               .then(response => response.json())
+               .then(data => {
+                    displayHourlyForecast(data);
+                })
+               .catch(error => {
+                    console.error('获取3小时预报数据失败:', error);
+                    hourlyContainer.innerHTML = '<p>获取3小时预报数据失败</p>';
+                });
+        }
+
+        // 通过IP定位获取天气
+        function fetchWeatherByIP() {
+            loadingIp.style.display = 'inline';
+            ipLocateBtn.disabled = true;
+            geoLocateBtn.disabled = true;
+
+            fetch('/api/weather')
+               .then(response => response.json())
+               .then(data => {
+                    displayWeatherData(data[0]);
+
+                    // 获取并显示3小时预报
+                    const areaCode = data[0].area_code;
+                    if (areaCode) {
+                        fetchAndDisplayHourlyForecast(areaCode);
+                    }
+                })
+               .catch(error => {
+                    console.error('IP定位获取天气数据失败:', error);
+                    locationDisplay.textContent = '位置: 定位失败';
+                })
+               .finally(() => {
+                    loadingIp.style.display = 'none';
+                    ipLocateBtn.disabled = false;
+                    geoLocateBtn.disabled = false;
+                });
+        }
+
+        // 通过GPS定位获取天气
+        function fetchWeatherByGPS() {
+            if (!navigator.geolocation) {
+                alert("您的浏览器不支持地理位置定位");
+                return;
+            }
+
+            loadingGeo.style.display = 'inline';
+            ipLocateBtn.disabled = true;
+            geoLocateBtn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+
+                    // 发送GPS坐标到后端
+                    fetch('/api/gps_weather', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ latitude, longitude })
+                    })
+                   .then(response => response.json())
+                   .then(data => {
+                        displayWeatherData(data[0]);
+
+                        // 获取并显示3小时预报
+                        const areaCode = data[0].area_code;
+                        if (areaCode) {
+                            fetchAndDisplayHourlyForecast(areaCode);
+                        }
+                    })
+                   .catch(error => {
+                        console.error('GPS定位获取天气数据失败:', error);
+                        locationDisplay.textContent = '位置: 定位失败';
+                    })
+                   .finally(() => {
+                        loadingGeo.style.display = 'none';
+                        ipLocateBtn.disabled = false;
+                        geoLocateBtn.disabled = false;
+                    });
+                },
+                error => {
+                    console.error('获取地理位置失败:', error);
+                    loadingGeo.style.display = 'none';
+                    ipLocateBtn.disabled = false;
+                    geoLocateBtn.disabled = true;
+
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            locationDisplay.textContent = '位置: 用户拒绝了地理位置请求';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            locationDisplay.textContent = '位置: 位置信息不可用';
+                            break;
+                        case error.TIMEOUT:
+                            locationDisplay.textContent = '位置: 获取位置超时';
+                            break;
+                        case error.UNKNOWN_ERROR:
+                            locationDisplay.textContent = '位置: 发生未知错误';
+                            break;
+                    }
+                },
+                { timeout: 10000 }
+            );
+        }
+
+        // 绑定按钮事件
+        ipLocateBtn.addEventListener('click', fetchWeatherByIP);
+        geoLocateBtn.addEventListener('click', fetchWeatherByGPS);
+
+        areaSelect.addEventListener('change', () => {
+            const selectedAreaCode = areaSelect.value;
+            if (selectedAreaCode) {
+                // 直接使用地区代码作为参数
+                fetch(`/api/weather?area_codes=${selectedAreaCode}`)
+                   .then(response => response.json())
+                   .then(data => {
+                        // 查找匹配的地区数据
+                        let selectedWeather = data.find(item => item.area_code === selectedAreaCode);
+
+                        // 如果没找到，使用第一个结果
+                        if (!selectedWeather && data.length > 0) {
+                            selectedWeather = data[0];
+                        }
+
+                        if (selectedWeather) {
+                            // 更新选择框的值为实际选择的地区
+                            areaSelect.value = selectedAreaCode;
+                            displayWeatherData(selectedWeather);
+
+                            // 获取并显示3小时预报
+                            fetchAndDisplayHourlyForecast(selectedAreaCode);
+                        } else {
+                            locationDisplay.textContent = `位置: 无法获取数据`;
+                        }
+                    })
+                   .catch(error => {
+                        console.error('获取指定地区天气数据失败:', error);
+                        locationDisplay.textContent = `位置: 获取数据失败`;
+                    });
+            } else {
+                locationDisplay.textContent = '位置: 请选择地区';
+            }
+        });
+
+        // 获取历史天气数据
+        fetch('/api/history')
+           .then(response => response.json())
+           .then(data => {
+                console.log('历史数据:', data); // 添加日志输出，便于调试
+                const historyTableBody = document.getElementById('history-table').getElementsByTagName('tbody')[0];
+
+                // 清空表格
+                historyTableBody.innerHTML = '';
+
+                if (data && data.length > 0) {
+                    // 按记录时间降序排序（最新的记录在前）
+                    data.sort((a, b) => new Date(b.record_time) - new Date(a.record_time));
+
+                    data.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.record_time || '未知'}</td>
+                            <td>${item.area_code || '未知'}</td>
+                            <td>${item.location_name || '未知'}</td>
+                            <td>${item.weather || '未知'}</td>
+                            <td>${item.temp || '未知'}°C</td>
+                            <td>${item.wind || '未知'}</td>
+                        `;
+                        historyTableBody.appendChild(row);
+                    });
+                } else {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td colspan="6">暂无历史天气记录</td>`;
+                    historyTableBody.appendChild(row);
+                }
+            })
+           .catch(error => {
+                console.error('获取历史天气数据失败:', error);
+                const historyTableBody = document.getElementById('history-table').getElementsByTagName('tbody')[0];
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="6">获取历史数据失败，请稍后再试</td>`;
+                historyTableBody.appendChild(row);
+            });
+    </script>
+</body>
+
+</html>

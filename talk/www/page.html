@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帖子详情</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        accent: '#722ED1',
+                        neutral: '#F5F7FA',
+                        'neutral-dark': '#1D2129',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .comment-box {
+                transition: all 0.2s ease;
+            }
+            .comment-box:focus-within {
+                box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.2);
+            }
+            /* 修改删除按钮样式和位置 */
+            .delete-comment-btn {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                background-color: rgba(255, 255, 255, 0.8);
+                padding: 4px;
+                border-radius: 50%;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .comment-card:hover .delete-comment-btn {
+                opacity: 1;
+            }
+            .comment-card {
+                position: relative;
+            }
+        }
+    </style>
+</head>
+<body class="bg-neutral font-inter text-neutral-dark min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-md fixed w-full z-10 transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-comments text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-primary">OJ论坛</h1>
+            </div>
+            <div class="hidden md:flex items-center space-x-6">
+               <a href="#" class="text-neutral-dark hover:text-primary transition-colors" id="home-link">首页</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span id="username-display" class="text-sm text-neutral-dark/80"></span>
+                <button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg" id="back-btn">
+                    <i class="fa fa-arrow-left mr-2"></i>返回
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="flex-grow pt-20 pb-10">
+        <div class="container mx-auto px-4">
+            <!-- 帖子标题信息 -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h2 class="text-2xl font-bold text-neutral-dark mb-2" id="post-title"></h2>
+                <div class="flex items-center text-sm text-neutral-dark/60">
+                    <i class="fa fa-user-circle mr-1"></i>
+                    <span id="post-author"></span>
+                    <span class="mx-2">•</span>
+                    <i class="fa fa-calendar mr-1"></i>
+                    <span id="post-time"></span>
+                </div>
+            </div>
+
+            <!-- 评论输入框 -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6 comment-box">
+                <h3 class="text-lg font-semibold text-neutral-dark mb-4">发表评论</h3>
+                <form id="comment-form" class="space-y-4">
+                    <div>
+                        <textarea id="comment-content" name="comment-content" rows="4" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all resize-none"
+                            placeholder="分享您的想法..."></textarea>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" 
+                            class="bg-primary hover:bg-primary/90 text-white font-medium py-2.5 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center">
+                            <i class="fa fa-paper-plane mr-2"></i>发布评论
+                        </button>
+                    </div>
+                </form>
+                <!-- 表单错误提示 -->
+                <div class="mt-4 hidden" id="comment-error">
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg">
+                        <p id="comment-error-text">请检查您的输入</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 评论列表 -->
+            <div class="bg-white rounded-xl shadow-md p-6" id="comments-container">
+                <h3 class="text-lg font-semibold text-neutral-dark mb-4">评论列表</h3>
+                
+                <!-- 加载状态 -->
+                <div class="text-center py-10" id="loading-indicator">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
+                    <p class="mt-3 text-neutral-dark/60">加载评论中...</p>
+                </div>
+                
+                <!-- 错误提示 -->
+                <div class="hidden" id="error-message">
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg">
+                        <p class="font-bold">加载失败</p>
+                        <p id="error-text">无法获取评论数据</p>
+                    </div>
+                </div>
+                
+                <!-- 空列表提示 -->
+                <div class="hidden text-center py-10" id="empty-comments">
+                    <i class="fa fa-comment-o text-5xl text-neutral-dark/30 mb-4"></i>
+                    <p class="text-neutral-dark/60">暂无评论，快来发表您的看法吧！</p>
+                </div>
+                
+                <!-- 评论将通过JavaScript动态加载 -->
+                <div id="comments-list"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-white border-t border-gray-200 py-6">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-neutral-dark/60 text-sm">这里是底部</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 删除确认模态框 -->
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center" id="delete-comment-modal">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="delete-modal-content">
+            <div class="p-6">
+                <div class="text-center mb-4">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                        <i class="fa fa-trash text-red-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-neutral-dark">确认删除评论</h3>
+                    <p class="text-neutral-dark/60 mt-2">您确定要删除这条评论吗？此操作不可撤销。</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="cancel-delete-comment" class="flex-1 border border-gray-300 text-neutral-dark py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        取消
+                    </button>
+                    <button id="confirm-delete-comment" class="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        确认删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const homeLink = document.getElementById('home-link');
+        const currentName = new URLSearchParams(window.location.search).get('name'); // 获取当前 URL 中的 name 参数
+        
+        if (currentName) {
+            homeLink.href = `talk.html?name=${encodeURIComponent(currentName)}`; // 拼接参数
+        } else {
+            homeLink.href = 'talk.html'; // 无参数时直接跳转
+        }
+        
+        // 获取URL参数
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 从URL获取帖子信息
+        const postType = getUrlParam('type'); // 关键：获取type参数
+        const postAuthor = getUrlParam('name');
+        const currentUser = getUrlParam('current');
+        
+        // DOM元素
+        const postTitleElement = document.getElementById('post-title');
+        const postAuthorElement = document.getElementById('post-author');
+        const postTimeElement = document.getElementById('post-time');
+        const usernameDisplay = document.getElementById('username-display');
+        const commentsList = document.getElementById('comments-list');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const emptyComments = document.getElementById('empty-comments');
+        const commentForm = document.getElementById('comment-form');
+        const commentContent = document.getElementById('comment-content');
+        const commentError = document.getElementById('comment-error');
+        const commentErrorText = document.getElementById('comment-error-text');
+        const backBtn = document.getElementById('back-btn');
+        const deleteCommentModal = document.getElementById('delete-comment-modal');
+        const deleteModalContent = document.getElementById('delete-modal-content');
+        const cancelDeleteCommentBtn = document.getElementById('cancel-delete-comment');
+        const confirmDeleteCommentBtn = document.getElementById('confirm-delete-comment');
+        
+        // 当前要删除的评论ID
+        let currentDeleteCommentId = '';
+        // 是否为管理员
+        let isAdmin = false;
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            // 验证type参数是否存在
+            if (!postType) {
+                alert('帖子类型无效');
+                window.history.back();
+                return;
+            }
+
+            // 检查是否为管理员
+            checkAdmin(currentUser).then(result => {
+                isAdmin = result;
+                console.log(`用户 ${currentUser} 是否为管理员: ${isAdmin}`);
+                // 加载评论
+                fetchComments(postType);
+            }).catch(error => {
+                console.error('检查管理员身份失败');
+                fetchComments(postType); // 即使检查失败也继续加载评论
+            });
+
+            // 设置页面标题和导航栏信息
+            document.title = `${postType} - OJ论坛`;
+            postTitleElement.textContent = postType;
+            
+            if (postAuthor) {
+                postAuthorElement.textContent = postAuthor;
+            }
+            
+            if (currentUser) {
+                usernameDisplay.textContent = `当前用户: ${currentUser}`;
+            } else {
+                usernameDisplay.textContent = '未登录';
+                usernameDisplay.classList.add('text-red-500');
+            }
+            
+            // 设置创建时间为当前时间（实际应用中应从后端获取）
+            postTimeElement.textContent = new Date().toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            // 返回按钮
+            backBtn.addEventListener('click', () => {
+                window.history.back();
+            });
+            
+            // 表单提交处理
+            commentForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                addComment(postType); // 传递type参数
+            });
+            
+            // 删除评论模态框事件
+            cancelDeleteCommentBtn.addEventListener('click', closeDeleteCommentModal);
+            confirmDeleteCommentBtn.addEventListener('click', deleteCurrentComment);
+        });
+
+        // 显示/隐藏元素的工具函数
+        function show(element) {
+            element.classList.remove('hidden');
+        }
+
+        function hide(element) {
+            element.classList.add('hidden');
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 检查用户是否是管理员
+        async function checkAdmin(username) {
+            try {
+                if (!username) return false;
+                
+                const response = await fetch(`/checkadmin?name=${encodeURIComponent(username)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`检查管理员身份失败`);
+                }
+                
+                const data = await response.json();
+                return data.isAdmin;
+            } catch (error) {
+                console.error('检查管理员身份失败');
+                return false;
+            }
+        }
+
+        // 获取评论列表（接收type参数）
+        async function fetchComments(type) {
+            try {
+                if (!type) throw new Error('缺少帖子类型参数'); // 验证type非空
+
+                show(loadingIndicator);
+                hide(errorMessage);
+                hide(emptyComments);
+                commentsList.innerHTML = '';
+
+                // 构建请求体（包含type）
+                const requestBody = JSON.stringify({
+                    type: type // 关键：将type放入请求体
+                });
+
+                // 发送POST请求到/findone
+                const response = await fetch('/findone', {
+                    method: 'Post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: requestBody
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`获取评论失败`);
+                }
+
+                const comments = await response.json();
+                
+                if (!comments || comments.length === 0) {
+                    show(emptyComments);
+                } else {
+                    renderComments(comments);
+                }
+            } catch (error) {
+                console.error('获取评论失败');
+                errorText.textContent = '无法获取评论数据';
+                show(errorMessage);
+            } finally {
+                hide(loadingIndicator);
+            }
+        }
+
+        // 渲染评论列表
+        function renderComments(comments) {
+            comments.forEach(comment => {
+                const commentElement = document.createElement('div');
+                commentElement.className = 'border-b border-gray-100 pb-5 my-5 last:border-0 last:pb-0 comment-card';
+                
+                // 构建删除按钮（仅管理员可见）
+                let deleteButtonHtml = '';
+                if (isAdmin) {
+                    deleteButtonHtml = `
+                        <button class="delete-comment-btn absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors"
+                                data-id="${comment.id}">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    `;
+                }
+                
+                commentElement.innerHTML = `
+                    <div class="relative">
+                        ${deleteButtonHtml}
+                        <div class="flex items-start">
+                            <div class="mr-3">
+                                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                    ${comment.name ? comment.name.charAt(0) : '匿'}
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center mb-1">
+                                    <h4 class="font-medium text-neutral-dark">${comment.name || '匿名用户'}</h4>
+                                    <span class="text-xs text-neutral-dark/60">${formatDate(comment.time)}</span>
+                                </div>
+                                <p class="text-neutral-dark/80 whitespace-pre-wrap">${comment.content}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                commentsList.appendChild(commentElement);
+                
+                // 添加删除按钮事件（仅管理员有）
+                const deleteBtn = commentElement.querySelector('.delete-comment-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // 阻止事件冒泡
+                        const commentId = deleteBtn.getAttribute('data-id');
+                        openDeleteCommentModal(commentId);
+                    });
+                }
+            });
+        }
+
+        // 添加新评论（接收type参数）
+        async function addComment(type) {
+            if (!currentUser) {
+                commentErrorText.textContent = '请先登录才能发表评论';
+                show(commentError);
+                return;
+            }
+            
+            const content = commentContent.value.trim();
+            
+            if (!content) {
+                commentErrorText.textContent = '评论内容不能为空';
+                show(commentError);
+                return;
+            }
+            
+            try {
+                // 构建包含type的JSON数据
+                const requestData = {
+                    type: type, // 关键：从参数获取type
+                    name: currentUser,
+                    time: new Date().toISOString(),
+                    content: content
+                };
+
+                const response = await fetch('/insertone', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`发布评论失败`);
+                }
+
+                // 发布成功，清空输入框，重新加载评论
+                commentContent.value = '';
+                hide(commentError);
+                fetchComments(type); // 传递type参数
+                
+                // 显示成功提示
+                alert('评论发布成功！');
+            } catch (error) {
+                console.error('发布评论失败');
+                commentErrorText.textContent = error.message || '发布评论失败';
+                show(commentError);
+            }
+        }
+
+        // 打开删除评论模态框
+        function openDeleteCommentModal(commentId) {
+            currentDeleteCommentId = commentId;
+            
+            deleteCommentModal.classList.remove('hidden');
+            deleteCommentModal.classList.add('flex');
+            setTimeout(() => {
+                deleteModalContent.classList.remove('scale-95', 'opacity-0');
+                deleteModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        // 关闭删除评论模态框
+        function closeDeleteCommentModal() {
+            deleteModalContent.classList.remove('scale-100', 'opacity-100');
+            deleteModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                deleteCommentModal.classList.add('hidden');
+                deleteCommentModal.classList.remove('flex');
+                currentDeleteCommentId = '';
+            }, 300);
+        }
+
+        // 删除当前选中的评论
+        async function deleteCurrentComment() {
+            if (!currentDeleteCommentId || !isAdmin) {
+                closeDeleteCommentModal();
+                return;
+            }
+            
+            try {
+                const response = await fetch('/deletecomme', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: currentDeleteCommentId
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `删除评论失败`);
+                }
+
+                // 删除成功，刷新评论列表
+                closeDeleteCommentModal();
+                fetchComments(postType);
+                
+                // 显示成功提示
+                alert('评论删除成功！');
+            } catch (error) {
+                console.error('删除评论失败');
+                alert('删除评论失败');
+            }
+        }
+    </script>
+</body>
+</html>

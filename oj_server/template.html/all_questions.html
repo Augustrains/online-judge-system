@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ace测试</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/ace.js" type="text/javascript"
+        charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/extlanguage_tools.js" type="text/javascript"
+        charset="utf-8"></script>
+
+    <!-- jquery cdn，用于加速  -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.js"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线OJ-题目列表</title>
+    <style>
+        /* 基础样式重置 */
+        * { 
+            margin: 0px;     
+            padding: 0px;    
+            box-sizing: border-box;
+        }       
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background-color: #f5f5f5;
+            font-family: Arial, sans-serif;
+        }
+        
+        /* 导航栏样式 */
+        .container .navbar {
+            width: 100%;
+            height: 50px;
+            background-color: black;
+            overflow: hidden;
+        }
+
+        .container .navbar a {
+            color: aqua;
+            font-size: large;
+            line-height: 50px;
+            text-decoration: none;
+            display: inline-block;
+            width: 80px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .container .navbar a:hover {
+            color: rgb(17, 17, 17);
+            background-color: aliceblue;
+        }
+         
+        .container .navbar .login {
+            float: right;
+            width: auto;
+            padding: 0 15px;
+        }
+
+        /* 主要内容区域 */
+        .content-box {
+            width: 900px;
+            margin: 30px auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        /* 题目列表标题 */
+        .question_list h1 {
+            color: rgb(49, 133, 133);
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        /* 搜索框样式 */
+        .search-container {
+            margin: 20px auto;
+            width: 100%;
+            text-align: center;
+        }
+
+        .search-box {
+            width: 70%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-box:focus {
+            border-color: rgb(49, 133, 133);
+            box-shadow: 0 0 8px rgba(49, 133, 133, 0.3);
+        }
+
+        /* 表格样式 */
+        .question-table {
+            width: 100%;
+            font-size: 16px;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .question-table th {
+            padding: 15px;
+            text-align: left;
+            background-color: #f8f9fa;
+            font-weight: bold;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .question-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+
+        /* 编号列 */
+        .question-table td:first-child {
+            text-align: left;
+            width: 15%;
+        }
+
+        /* 标题列 - 向右移动 */
+        .question-table td:nth-child(2) {
+            text-align: left;
+            width: 70%;
+            padding-left: 60px; /* 向右移动 */
+        }
+
+        /* 难度列 */
+        .question-table td:last-child {
+            text-align: center;
+            width: 15%;
+        }
+
+        .question-table .item a {
+            text-decoration: none;
+            color: #333;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .question-table .item a:hover {
+            color: rgb(165, 62, 249);
+        }
+
+        /* 无结果提示 */
+        .no-results {
+            text-align: center;
+            margin: 30px 0;
+            color: #666;
+            font-size: 18px;
+            display: none;
+            padding: 20px;
+        }
+
+        /* 页脚样式 */
+        .footer {
+            height: 50px;
+            text-align: center;
+            width: 100%;
+            color: rgb(124, 122, 122);
+            line-height: 50px;
+            margin-top: 30px;
+        }
+
+        /* 难度样式 */
+        .difficulty {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .easy {
+            background-color: #e6f7e6;
+            color: #28a745;
+        }
+        
+        .medium {
+            background-color: #fff8e6;
+            color: #ffc107;
+        }
+        
+        .hard {
+            background-color: #ffebee;
+            color: #dc3545;
+        }
+
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            list-style: none;
+        }
+        
+        .pagination li {
+            margin: 0 5px;
+        }
+        
+        .pagination a {
+            display: block;
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s;
+        }
+        
+        .pagination a:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .pagination .active a {
+            background-color: rgb(49, 133, 133);
+            color: white;
+            border-color: rgb(49, 133, 133);
+        }
+
+        /* 管理员按钮样式 */
+.action-btn {
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.action-btn:hover {
+    opacity: 0.8;
+}
+
+/* 模态框样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 60%;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.submit-btn {
+    background-color: rgb(49, 133, 133);
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.submit-btn.delete {
+    background-color: #f44336;
+}
+
+.submit-btn:hover {
+    opacity: 0.9;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navbar">
+            <a id="homeLink" href="/">首页</a>
+            <a id="questionsLink" href="/all_questions">题库</a>
+            <a id="talkLink" href="#" onclick="openTalkPage()">讨论</a>
+            <a id="userAdminLink" style="display:none;" href="#" onclick="openUserAdminPage()">用户管理</a>
+            <a class="login" id="welcomeUser">欢迎:用户名</a>
+            
+        </div>
+
+        <!-- 白色内容方块 -->
+        <div class="content-box">
+            <div class="question_list">
+                <h1>OnlineJudge题目列表</h1>
+                <!-- 管理员操作按钮 -->
+<div class="admin-actions" style="margin-bottom: 20px; text-align: right;">
+    <button id="addQuestionBtn" class="action-btn" style="background-color: #4CAF50;">添加题目</button>
+    <button id="delQuestionBtn" class="action-btn" style="background-color: #f44336;">删除题目</button>
+</div>
+
+<!-- 添加题目模态框 -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>添加新题目</h2>
+        <form id="addQuestionForm">
+            <div class="form-group">
+                <label>编号:</label>
+                <input type="text" name="number" required>
+            </div>
+            <div class="form-group">
+                <label>标题:</label>
+                <input type="text" name="title" required>
+            </div>
+            <div class="form-group">
+                <label>难度:</label>
+                <select name="star" required>
+                    <option value="easy">easy</option>
+                    <option value="medium">medium</option>
+                    <option value="hard">hard</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>时间限制(s):</label>
+                <input type="number" name="cpu_limit" min="1" required>
+            </div>
+            <div class="form-group">
+                <label>内存限制(MB):</label>
+                <input type="number" name="mem_limit" min="1" required>
+            </div>
+            <div class="form-group">
+                <label>题目描述:</label>
+                <textarea name="desc" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>初始代码:</label>
+                <textarea name="header" rows="6" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>测试代码:</label>
+                <textarea name="tail" rows="6" required></textarea>
+            </div>
+            <button type="submit" class="submit-btn">提交</button>
+        </form>
+    </div>
+</div>
+
+<!-- 删除题目模态框 -->
+<div id="delModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>删除题目</h2>
+        <form id="delQuestionForm">
+            <div class="form-group">
+                <label>题目编号:</label>
+                <input type="text" name="number" required>
+            </div>
+            <button type="submit" class="submit-btn delete">确认删除</button>
+        </form>
+    </div>
+</div>
+                <!-- 搜索框 -->
+                <div class="search-container">
+                    <input type="text" id="searchInput" class="search-box" placeholder="输入关键词搜索题目..." oninput="filterQuestions()">
+                </div>
+                
+                <!-- 无结果提示 -->
+                <div id="noResults" class="no-results">
+                    没有找到匹配的题目
+                </div>
+                
+                <table class="question-table" id="questionTable">
+                    <thead>
+                        <tr>
+                            <th class="item">编号</th>
+                            <th class="item" style="padding-left: 30px;">标题</th> <!-- 标题向右移动 -->
+                            <th class="item" style="padding-left: 45px;">难度</th>
+                        </tr>
+                    </thead>
+                    <tbody id="questionTableBody">
+                        {{#question_list}}
+                        <tr class="question-row">
+                            <td class="item">{{number}}</td>
+                            <td class="item"><a href="/question/{{number}}">{{title}}</a></td>
+                            <td class="item"><span class="difficulty {{star}}">{{star}}</span></td>
+                        </tr>
+                        {{/question_list}}
+                    </tbody>
+                </table>
+                
+                <!-- 分页导航 -->
+                <ul class="pagination" id="pagination">
+                    <!-- 页码将通过JavaScript动态生成 -->
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <h4>@希望有朝一日可以如愿以偿</h4>
+        </div>
+    </div>
+    
+    <script>
+        // 从URL获取name参数并更新所有链接
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取URL中的name参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const name = urlParams.get('name');
+            
+            if (name) {
+                // 更新欢迎信息
+                document.getElementById('welcomeUser').textContent = `欢迎:${name}`;
+                
+                // 为导航栏链接添加name参数
+                const navLinks = ['homeLink', 'questionsLink'];
+                navLinks.forEach(linkId => {
+                    const link = document.getElementById(linkId);
+                    const originalHref = link.getAttribute('href');
+                    if (originalHref === '#') {
+                        link.href = `http://8.140.17.222:9090/index.html?name=${encodeURIComponent(name)}`;
+                    } else {
+                        link.href = `${originalHref}?name=${encodeURIComponent(name)}`;
+                    }
+                });
+                
+                // 为题目列表中的每个链接添加name参数
+                const questionLinks = document.querySelectorAll('.question-table .item a');
+                questionLinks.forEach(link => {
+                    const originalHref = link.getAttribute('href');
+                    link.href = `${originalHref}?name=${encodeURIComponent(name)}`;
+                });
+            }
+        });
+    
+        //跳转
+        function openTalkPage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name') || '匿名用户';
+    window.open(`http://8.140.17.222:9099/talk.html?name=${encodeURIComponent(name)}`, '_blank');
+}    
+        
+
+        // 题目过滤函数
+        function filterQuestions() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('questionTable');
+            const rows = table.getElementsByClassName('question-row');
+            const noResults = document.getElementById('noResults');
+            
+            let found = false;
+            
+            for (let i = 0; i < rows.length; i++) {
+                const titleCell = rows[i].getElementsByTagName('td')[1];
+                if (titleCell) {
+                    const title = titleCell.textContent || titleCell.innerText;
+                    if (title.toUpperCase().indexOf(filter) > -1) {
+                        rows[i].style.display = '';
+                        found = true;
+                    } else {
+                        rows[i].style.display = 'none';
+                    }
+                }
+            }
+            
+            // 显示/隐藏无结果提示
+            noResults.style.display = found ? 'none' : 'block';
+        }
+        
+        // 分页功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const rowsPerPage = 20;
+            const rows = document.querySelectorAll('#questionTableBody .question-row');
+            const pageCount = Math.ceil(rows.length / rowsPerPage);
+            const pagination = document.getElementById('pagination');
+            
+            // 显示第一页
+            showPage(1);
+            
+            // 生成分页链接
+            for (let i = 1; i <= pageCount; i++) {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = '#';
+                a.textContent = i;
+                a.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showPage(i);
+                    // 更新活动页码样式
+                    const currentActive = document.querySelector('.pagination .active');
+                    if (currentActive) {
+                        currentActive.classList.remove('active');
+                    }
+                    this.parentNode.classList.add('active');
+                });
+                
+                li.appendChild(a);
+                if (i === 1) {
+                    li.classList.add('active');
+                }
+                pagination.appendChild(li);
+            }
+            
+            function showPage(page) {
+                const start = (page - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                
+                rows.forEach((row, index) => {
+                    if (index >= start && index < end) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+    // 获取当前URL中的name参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('name');
+    
+    // 首先验证用户权限
+    checkAdminPermission(username).then(isAdmin => {
+        if (!isAdmin) {
+            // 如果不是管理员，隐藏管理按钮并提示
+            document.getElementById('addQuestionBtn').style.display = 'none';
+            document.getElementById('delQuestionBtn').style.display = 'none';
+            return;
+        }
+        
+        // 是管理员，初始化管理功能
+        initAdminFunctions();
+    }).catch(error => {
+        console.error('权限验证失败');
+        alert('权限验证服务不可用');
+    });
+});
+
+// 初始化管理功能
+function initAdminFunctions() {
+    // 获取模态框元素
+    const addModal = document.getElementById('addModal');
+    const delModal = document.getElementById('delModal');
+    const addBtn = document.getElementById('addQuestionBtn');
+    const delBtn = document.getElementById('delQuestionBtn');
+    const closeSpans = document.getElementsByClassName('close');
+    
+    // 打开模态框
+    addBtn.onclick = function() { addModal.style.display = 'block'; }
+    delBtn.onclick = function() { delModal.style.display = 'block'; }
+    
+    // 关闭模态框
+    for (let span of closeSpans) {
+        span.onclick = function() {
+            addModal.style.display = 'none';
+            delModal.style.display = 'none';
+        }
+    }
+    
+    // 点击模态框外部关闭
+    window.onclick = function(event) {
+        if (event.target == addModal) addModal.style.display = 'none';
+        if (event.target == delModal) delModal.style.display = 'none';
+    }
+    
+    // 添加题目表单提交
+    document.getElementById('addQuestionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            number: this.number.value,
+            title: this.title.value,
+            star: this.star.value,
+            cpu_limit: parseInt(this.cpu_limit.value),
+            mem_limit: parseInt(this.mem_limit.value),
+            desc: this.desc.value,
+            header: this.header.value,
+            tail: this.tail.value
+        };
+        
+        addQuestion(formData);
+    });
+    
+    // 删除题目表单提交
+    document.getElementById('delQuestionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            number: this.number.value
+        };
+        
+        deleteQuestion(formData);
+    });
+}
+
+// 检查用户是否是管理员
+function checkAdminPermission(username) {
+    return new Promise((resolve, reject) => {
+        if (!username) {
+            resolve(false);
+            return;
+        }
+        
+        $.ajax({
+            url: 'http://8.140.17.222:8080/checkadmin',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ name: username }),
+            success: function(response) {
+                if (response && response.isAdmin) {
+                    resolve(true);
+                } else {
+                    //alert('您不是管理员，无法进行此操作');
+                    resolve(false);
+                }
+            },
+            error: function(xhr) {
+                reject(new Error('权限验证失败'));
+            }
+        });
+    });
+}
+
+// 添加题目函数
+function addQuestion(data) {
+    // 显示加载状态
+    const submitBtn = document.querySelector('#addQuestionForm button');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '提交中...';
+    
+    $.ajax({
+        url: 'http://8.140.17.222:8080/addquestion',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            alert('题目添加成功！');
+            document.getElementById('addModal').style.display = 'none';
+            location.reload();
+        },
+        error: function(xhr) {
+            try {
+                const error = JSON.parse(xhr.responseText);
+                alert('添加失败');
+            } catch {
+                alert('添加失败: 服务器错误');
+            }
+        },
+        complete: function() {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交';
+        }
+    });
+}
+
+// 删除题目函数
+function deleteQuestion(data) {
+    if (!confirm('确定要删除题目 ' + data.number + ' 吗？')) return;
+    
+    // 显示加载状态
+    const submitBtn = document.querySelector('#delQuestionForm button');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '删除中...';
+    
+    $.ajax({
+        url: 'http://8.140.17.222:8080/delquestion',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            alert('题目删除成功！');
+            document.getElementById('delModal').style.display = 'none';
+            location.reload();
+        },
+        error: function(xhr) {
+            try {
+                const error = JSON.parse(xhr.responseText);
+                alert('删除失败');
+            } catch {
+                alert('删除失败: 服务器错误');
+            }
+        },
+        complete: function() {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '确认删除';
+        }
+    });
+}
+
+
+// 打开用户管理页面
+function openUserAdminPage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name') || '匿名用户';
+    window.open(`http://8.140.17.222:9092/user.html?name=${encodeURIComponent(name)}`, '_blank');
+}
+
+// 修改权限检查函数
+function checkAdminPermission(username) {
+    return new Promise((resolve, reject) => {
+        if (!username) {
+            resolve(false);
+            return;
+        }
+        
+        $.ajax({
+            url: 'http://8.140.17.222:8080/checkadmin',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ name: username }),
+            success: function(response) {
+                if (response && response.isAdmin) {
+                    // 显示用户管理按钮
+                    document.getElementById('userAdminLink').style.display = 'inline-block';
+                    resolve(true);
+                } else {
+                    resolve(false);
+                }
+            },
+            error: function(xhr) {
+                reject(new Error('权限验证失败'));
+            }
+        });
+    });
+}
+    </script>
+</body>
+</html>
