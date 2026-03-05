@@ -37,24 +37,6 @@
 
 ---
 
-# 📸 项目截图（可选）
-
-如果你部署后，可以添加截图：
-
-```
-docs/images/homepage.png
-docs/images/problem.png
-docs/images/forum.png
-```
-
-示例：
-
-```
-![homepage](docs/images/homepage.png)
-```
-
----
-
 # 🧭 项目目录
 
 ```
