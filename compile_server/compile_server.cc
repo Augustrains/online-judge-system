@@ -1,5 +1,10 @@
 #include "compile_run.hpp"
 #include"../comm/httplib.h"
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
+#include <sched.h>
+#include <unistd.h>
 
 using namespace ns_compile_and_run;
 using namespace httplib;
@@ -7,17 +12,56 @@ using namespace httplib;
 
 void Usage(std::string proc)
 {
-    std::cerr<<"Usage:"<<"\n\t"<<proc<<std::endl;
+    std::cerr << "Usage:" << "\n\t" << proc << " <port> <cpu_id>" << std::endl;
     
 }
-//.compile_server port
+
+static bool BindCpu(int cpu_id)
+{
+    long cpu_count = sysconf(_SC_NPROCESSORS_ONLN);
+    if (cpu_count <= 0)
+    {
+        std::cerr << "failed to detect online cpu count" << std::endl;
+        return false;
+    }
+    if (cpu_id < 0 || cpu_id >= cpu_count)
+    {
+        std::cerr << "cpu_id out of range, valid range is [0, " << cpu_count - 1 << "]" << std::endl;
+        return false;
+    }
+
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+    CPU_SET(cpu_id, &mask);
+    if (sched_setaffinity(0, sizeof(mask), &mask) != 0)
+    {
+        std::cerr << "sched_setaffinity failed: " << std::strerror(errno) << std::endl;
+        return false;
+    }
+    return true;
+}
+
+//.compile_server port cpu_id
 int main(int argc,char *argv[])
 {   
-    if(argc!=2)
+    if(argc!=3)
     {
         Usage(argv[0]);
         return 1;
     }
+
+    int port = std::atoi(argv[1]);
+    int cpu_id = std::atoi(argv[2]);
+    if (port <= 0)
+    {
+        std::cerr << "invalid port: " << argv[1] << std::endl;
+        return 1;
+    }
+    if (!BindCpu(cpu_id))
+    {
+        return 1;
+    }
+
     Server svr;
     pid_t server_pid = getpid();
     // 添加日志
@@ -53,7 +97,7 @@ int main(int argc,char *argv[])
         }
         });
     //svr.set_base_dir("./wwwroot");
-    svr.listen("0.0.0.0", atoi(argv[1])); // 启动服务
+    svr.listen("0.0.0.0", port); // 启动服务
 
 }
 
@@ -87,4 +131,3 @@ int main(int argc,char *argv[])
 
     // std::cout<<out_json<<std::endl;
     // return 0;
-
