@@ -37,6 +37,38 @@
 
 ---
 
+# 📸 项目截图
+
+## 首页
+
+![首页](./image/home.png)
+
+## 题库列表
+
+![题库列表](./image/question-list.png)
+
+## 答题界面
+
+![答题界面](./image/answer.png)
+
+## 判题结果
+
+![判题执行完成](./image/judge-result.png)
+
+## 用户登录
+
+![用户登录](./image/login.png)
+
+## 技术论坛
+
+![论坛页面](./image/forum.png)
+
+## 历史代码详情
+
+![历史代码详情](./image/history-detail.png)
+
+---
+
 # 🧭 项目目录
 
 ```
