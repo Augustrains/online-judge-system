@@ -1,6 +1,6 @@
 #include"./talkdata.hpp"
-#include"/root/OnlineJudge/comm/httplib.h"
-#include "/root/OnlineJudge/oj_server/judgeadmin.hpp"
+#include "../comm/httplib.h"
+#include "../oj_server/judgeadmin.hpp"
 
 namespace server
 {  
@@ -17,28 +17,39 @@ namespace server
     
     private:
     static void Inserttype(const httplib::Request &req,httplib::Response &rsp)
-    {    
+    {
         Json::Value video;
           //反序列化
          if(JsonUtil::UnSerialize(req.body,video)==false)
-         {   
+         {
             rsp.status=400;
             rsp.body=R"({"result":false,"reason": "新的信息格式解析失败"})";
             rsp.set_header("Content-Type","application/json");
             return;
          };
 
-        if(tb_video->Inserttype(video)==false)
+        // 检查帖子标题是否已存在
+        std::string type = video["type"].asString();
+        if (tb_video->CheckTypeExists(type))
         {
-            rsp.status=500;
-            rsp.body=R"({"result":false,"reason": "新增数据失败"})";
+            rsp.status=409;
+            rsp.body=R"({"result":false,"reason": "帖子名称已存在，请使用不同的标题"})";
             rsp.set_header("Content-Type","application/json");
             return;
         }
-        
-       // 提交成功后回到原本的网页
-       // rsp.set_redirect("/index.html",303);
-         return;
+
+        if(tb_video->Inserttype(video)==false)
+        {
+            rsp.status=500;
+            rsp.body=R"({"result":false,"reason": "新增数据失败，请稍后重试"})";
+            rsp.set_header("Content-Type","application/json");
+            return;
+        }
+
+        rsp.status=200;
+        rsp.body=R"({"result":true,"message": "帖子创建成功"})";
+        rsp.set_header("Content-Type","application/json");
+        return;
     }
 
 
@@ -61,10 +72,11 @@ namespace server
             rsp.set_header("Content-Type","application/json");
             return;
         }
-        
-       // 提交成功后回到原本的网页
-       // rsp.set_redirect("/index.html",303);
-         return;
+
+        rsp.status=200;
+        rsp.body=R"({"result":true,"message": "评论发布成功"})";
+        rsp.set_header("Content-Type","application/json");
+        return;
     }
 
 
@@ -181,28 +193,39 @@ static void UpdateView(const httplib::Request &req, httplib::Response &rsp)
        _svr.Post("/updateview", UpdateView);
 
 
-       // 删除帖子
+       // 删除帖子（需要管理员权限）
     _svr.Post("/deletetalk", [](const httplib::Request &req, httplib::Response &res) {
         try {
             Json::Value data;
             JsonUtil::UnSerialize(req.body, data);
             std::string type = data["type"].asString();
-           // std::cout<<type<<std::endl;
-            // 删除帖子
+            std::string name = data.get("name", "").asString();
+
+            // 服务端校验管理员权限
+            if (name.empty() || !judgeadmin::ojadmin::GetInstance().IsRoot(name)) {
+                res.status = 403;
+                res.body = R"({"result":false,"reason": "无权限，仅管理员可删除"})";
+                res.set_header("Content-Type", "application/json");
+                return;
+            }
 
             if(tb_video->deleteTalk(type)==true)
             {
               res.status = 200;
+              res.body = R"({"result":true,"message": "删除成功"})";
+              res.set_header("Content-Type", "application/json");
               return ;
             }
             else
             {
                 res.status = 400;
-                res.set_content("删除失败","text/plain");
+                res.body = R"({"result":false,"reason": "删除失败"})";
+                res.set_header("Content-Type", "application/json");
             }
         } catch (const std::exception& e) {
             res.status = 400;
-            res.set_content("Invalid request: " + std::string(e.what()), "text/plain");
+            res.body = R"({"result":false,"reason": "请求格式错误"})";
+            res.set_header("Content-Type", "application/json");
         }
     });
    
@@ -216,7 +239,7 @@ static void UpdateView(const httplib::Request &req, httplib::Response &rsp)
         
         Json::Value jud;
         std::string username = req.get_param_value("name");
-        bool ret=judgeadmin::ojadmin().IsRoot(username);
+        bool ret=judgeadmin::ojadmin::GetInstance().IsRoot(username);
         jud["isAdmin"]=ret;
        JsonUtil::Serialize(jud,res.body);
        res.status = 200;
@@ -224,7 +247,7 @@ static void UpdateView(const httplib::Request &req, httplib::Response &rsp)
       } );
  
        _svr.Post("/deletecomme", [](const httplib::Request &req, httplib::Response &res) {
-             
+
         Json::Value data;
         if (JsonUtil::UnSerialize(req.body, data) == false)
             {
@@ -234,24 +257,43 @@ static void UpdateView(const httplib::Request &req, httplib::Response &rsp)
                 return;
             }
 
-            // 检查id字段是否存在且为字符串类型
-            if (!data.isMember("id") || !data["id"].isString()) {
+            // 检查id字段是否存在且为字符串或整数类型
+            if (!data.isMember("id") || (!data["id"].isString() && !data["id"].isInt())) {
                 res.status = 400;
                 res.body = R"({"result":false,"reason": "缺少id字段或类型错误"})";
                 res.set_header("Content-Type", "application/json");
                 return;
             }
 
-            // 将字符串转换为整数
-            std::string idStr = data["id"].asString();
-            int id = std::stoi(idStr);
-            std::cout<<id<<std::endl;
+            // 服务端校验管理员权限
+            std::string name = data.get("name", "").asString();
+            if (name.empty() || !judgeadmin::ojadmin::GetInstance().IsRoot(name)) {
+                res.status = 403;
+                res.body = R"({"result":false,"reason": "无权限，仅管理员可删除评论"})";
+                res.set_header("Content-Type", "application/json");
+                return;
+            }
+
+            // 兼容 int 和 string 两种 id 类型
+            int id;
+            if (data["id"].isInt()) {
+                id = data["id"].asInt();
+            } else {
+                id = std::stoi(data["id"].asString());
+            }
+
             bool ret=tb_video->delcomment(id);
            if(ret==false)
            {
                  res.status = 400;
-                res.set_content("删除失败","text/plain");
+                 res.body = R"({"result":false,"reason": "删除失败"})";
+                 res.set_header("Content-Type", "application/json");
+                 return;
            }
+
+            res.status = 200;
+            res.body = R"({"result":true,"message": "评论删除成功"})";
+            res.set_header("Content-Type", "application/json");
       } );
 
 

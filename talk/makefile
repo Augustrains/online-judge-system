@@ -1,5 +1,5 @@
 talk: talk.cc
-	g++ -o $@ $^ -std=c++11  -L/usr/lib64/mysql  -ljsoncpp -lmysqlclient -lpthread
+	g++ -o $@ $^ -std=c++11 -I/usr/include/jsoncpp $(shell mariadb_config --include) -ljsoncpp $(shell mariadb_config --libs) -lpthread
 .PHONY:clean
 clean:
 	rm -f talk
